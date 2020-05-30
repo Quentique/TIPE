@@ -10,6 +10,7 @@
 #include <QLCDNumber>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include "canvas.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Simulator; }
@@ -28,8 +29,12 @@ private:
     QPushButton *start_simulation, *abort_simulation;
     QCheckBox *record, *save_to_csv;
     QSpinBox *density;
-    QLabel *state;
+    QLabel *state_label;
+    QLCDNumber *steps_number;
+    Canvas *canvas;
 
-    QLabel createLabel(const QString &text);
+    static void setRed(QLabel *pointer);
+    static void setGreen(QLabel *pointer);
+    static QLabel* createLabel(const QString &text);
 };
 #endif // SIMULATOR_H
