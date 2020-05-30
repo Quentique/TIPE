@@ -11,7 +11,10 @@ public:
     Canvas();
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void paintGrid(QPainter *painter, int n);
 private:
+    int grid_size = 5;
+    int fixed_size = 920;
     QBrush *whiteBackground;
     QPen *black;
 };
