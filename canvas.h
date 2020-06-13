@@ -17,13 +17,11 @@ protected:
     void paintGrid(QPainter *painter, int n);
     void updateGrid(QPainter *painter, int grid[]);
 private:
-    static const int grid_size = 32; // Grid size (in units)
+
     static const int fixed_size = 920; // Size of grid in pixels
-    static const int nb_states = 5; // Number of available states
-    int grid_state[grid_size*grid_size] = {0};
     QBrush *whiteBackground;
     QPen *black;
-    QString state_names[nb_states]; // Names of states (on fire, burnt, etc.)
+
 };
 
 #endif // CANVAS_H

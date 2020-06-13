@@ -9,7 +9,6 @@ int main(int argc, char *argv[])
     fmt.setSamples(4);
     QSurfaceFormat::setDefaultFormat(fmt);
     Simulator w;
-
     w.show();
     return a.exec();
 }

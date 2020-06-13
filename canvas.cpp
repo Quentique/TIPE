@@ -1,4 +1,5 @@
 #include "canvas.h"
+#include "Simulator.h"
 
 #include <QPainter>
 #include <QPaintEvent>
@@ -20,7 +21,7 @@ void Canvas::paintEvent(QPaintEvent *event)
     painter.begin(this);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.fillRect(event->rect(), Qt::white);
-    paintGrid(&painter, grid_size);
+    paintGrid(&painter, Simulator::grid_size);
     painter.end();
 }
 
@@ -35,8 +36,8 @@ void Canvas::paintGrid(QPainter *painter, int n){
 }
 
 void Canvas::updateGrid(QPainter *painter, int grid[]){
-    for (int i = 0 ; i < grid_size; i++) {
-        for (int j = 0; j<grid_size; j++) {
+    for (int i = 0 ; i < Simulator::grid_size; i++) {
+        for (int j = 0; j<Simulator::grid_size; j++) {
 
         }
     }
