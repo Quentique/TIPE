@@ -1,5 +1,5 @@
 #include "canvas.h"
-#include "Simulator.h"
+#include "simulator.h"
 
 #include <QPainter>
 #include <QPaintEvent>
@@ -10,7 +10,7 @@ Canvas::Canvas() : QOpenGLWidget()
 {
     whiteBackground = new QBrush(Qt::white);
     black = new QPen(Qt::black);
-    setFixedSize(fixed_size+2,fixed_size+2);
+    setFixedSize(fixed_size-2,fixed_size-2);
     setAutoFillBackground(true);
     paintEvent(nullptr);
 }
@@ -21,6 +21,7 @@ void Canvas::paintEvent(QPaintEvent *event)
     painter.begin(this);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.fillRect(event->rect(), Qt::white);
+    updateGrid(&painter);
     paintGrid(&painter, Simulator::grid_size);
     painter.end();
 }
@@ -35,9 +36,11 @@ void Canvas::paintGrid(QPainter *painter, int n){
     }
 }
 
-void Canvas::updateGrid(QPainter *painter, int grid[]){
+void Canvas::updateGrid(QPainter *painter){
+    double pas = fixed_size/Simulator::grid_size;
     for (int i = 0 ; i < Simulator::grid_size; i++) {
         for (int j = 0; j<Simulator::grid_size; j++) {
+            painter->fillRect(i*pas, j*pas, pas, pas, Simulator::state_colors[Simulator::grid_state[i*j]]);
 
         }
     }

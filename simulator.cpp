@@ -25,6 +25,7 @@ Simulator::Simulator(QWidget *parent)
 
     start_simulation = new QPushButton("Start");
     abort_simulation = new QPushButton("Abort");
+    random_map = new QPushButton("Random map");
     record = new QCheckBox("Record");
     save_to_csv = new QCheckBox("Save data to CSV");
     state_label = new QLabel("Not running...");
@@ -49,6 +50,7 @@ Simulator::Simulator(QWidget *parent)
     button_act_layout->addWidget(start_simulation);
     button_act_layout->addWidget(abort_simulation);
     gen_actions_layout->addLayout(button_act_layout);
+    gen_actions_layout->addWidget(random_map);
     gen_actions_layout->addWidget(record);
     gen_actions_layout->addWidget(save_to_csv);
     actions_layout->setLayout(gen_actions_layout);
