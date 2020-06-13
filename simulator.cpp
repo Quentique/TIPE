@@ -4,7 +4,8 @@
 // STATIC DATA INITIALIZATION :
 const QString Simulator::state_names[] = {QString("Ground"), QString("Grass"), QString("Tree"), QString("On Fire"), QString("Hot - Burnt"), QString("Burnt")};
 const QColor Simulator::state_colors[] = {QColor("tan"), QColor("chartreuse"), QColor("green"), QColor("red"), QColor("firebrick"), QColor("darkgrey")};
-int Simulator::grid_state[] = {0};
+int Simulator::grid_state[][Simulator::grid_size] = { {0} };
+bool Simulator::isStarted = false;
 
 Simulator::Simulator(QWidget *parent)
     : QMainWindow(parent)

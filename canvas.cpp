@@ -39,14 +39,20 @@ void Canvas::paintGrid(QPainter *painter, int n){
 void Canvas::updateGrid(QPainter *painter){
     double pas = fixed_size/Simulator::grid_size;
     for (int i = 0 ; i < Simulator::grid_size; i++) {
-        for (int j = 0; j<Simulator::grid_size; j++) {
-            painter->fillRect(i*pas, j*pas, pas, pas, Simulator::state_colors[Simulator::grid_state[i*j]]);
+        for (int j = 0 ; j < Simulator::grid_size; j++) {
+            painter->fillRect(i*pas, j*pas, pas, pas, Simulator::state_colors[Simulator::grid_state[i][j]]);
 
         }
     }
 }
 void Canvas::mousePressEvent(QMouseEvent *event) {
-
+    if (!Simulator::isStarted) {
+        int pas = fixed_size/Simulator::grid_size;
+        Simulator::grid_state[event->x()/pas][event->y()/pas] = 3;
+        repaint();
+        qDebug() << event->x()/pas;
+        qDebug() << event->y()/pas;
+    }
 }
 
 int Canvas::caseNumber(int xpos, int ypos, int grid_size, int widget_size) {
