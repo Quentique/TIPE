@@ -43,5 +43,8 @@ private:
     static void setRed(QLabel *pointer);
     static void setGreen(QLabel *pointer);
     static QLabel* createLabel(const QString &text);
+
+    void serializeData();
+    void readData();
 };
 #endif // SIMULATOR_H

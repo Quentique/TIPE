@@ -1,6 +1,11 @@
 #include "simulator.h"
 #include "ui_simulator.h"
 
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QFileDialog>
+
 // STATIC DATA INITIALIZATION :
 const QString Simulator::state_names[] = {QString("Ground"), QString("Grass"), QString("Tree"), QString("On Fire"), QString("Hot - Burnt"), QString("Burnt")};
 const QColor Simulator::state_colors[] = {QColor("tan"), QColor("chartreuse"), QColor("green"), QColor("red"), QColor("firebrick"), QColor("darkgrey")};
@@ -77,6 +82,7 @@ Simulator::Simulator(QWidget *parent)
     setStyleSheet("* { font-family: \"CMU Sans Serif\"; font-size: 14pt; }");
 
     // DATA INITIALIZATION :
+    readData();
 }
 
 Simulator::~Simulator()
@@ -96,4 +102,35 @@ void Simulator::setRed(QLabel *pointer) {
 }
 void Simulator::setGreen(QLabel *pointer) {
     pointer->setStyleSheet("color: green;");
+}
+
+void Simulator::serializeData() {
+    QJsonArray data;
+    for (int i = 0 ; i<Simulator::grid_size; i++) {
+        for (int j = 0 ; j <Simulator::grid_size ; j++) {
+            QJsonObject obj;
+            obj["x"] = i;
+            obj["y"] = j;
+            obj["state"] = Simulator::grid_state[i][j];
+            data.append(obj);
+        }
+    }
+    QString filename = QFileDialog::getSaveFileName(this, "Select file");
+    QFile file(filename);
+    file.open(QIODevice::WriteOnly);
+    file.write(QJsonDocument(data).toJson());
+}
+
+void Simulator::readData() {
+    QString filename = QFileDialog::getOpenFileName(this, "Open data save");
+    QFile file(filename);
+    file.open(QIODevice::ReadOnly);
+    QByteArray rawData = file.readAll();
+    QJsonDocument doc(QJsonDocument::fromJson(rawData));
+    QJsonArray array = doc.array();
+    for (int i = 0 ; i<array.count() ; i++) {
+        QJsonObject obj = array[i].toObject();
+        grid_state[obj["x"].toInt()][obj["y"].toInt()] = obj["state"].toInt();
+    }
+    canvas->repaint();
 }
