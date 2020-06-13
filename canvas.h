@@ -16,6 +16,8 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void paintGrid(QPainter *painter, int n);
     void updateGrid(QPainter *painter);
+signals:
+    void paintEnd();
 private:
 
     static const int fixed_size = 920; // Size of grid in pixels

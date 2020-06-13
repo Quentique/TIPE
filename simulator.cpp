@@ -5,6 +5,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QFileDialog>
+#include <QRandomGenerator>
 
 // STATIC DATA INITIALIZATION :
 const QString Simulator::state_names[] = {QString("Ground"), QString("Grass"), QString("Tree"), QString("On Fire"), QString("Hot - Burnt"), QString("Burnt")};
@@ -17,7 +18,7 @@ Simulator::Simulator(QWidget *parent)
 {
     QGridLayout *main_layout;
     QGroupBox *actions_layout;
-    QHBoxLayout *main_state_layout, *button_act_layout, *legend;
+    QHBoxLayout *main_state_layout, *button_act_layout, *legend, *dens1, *dens2;
     QVBoxLayout *state_layout, *generation_layout, *gen_actions_layout;
     window = new QWidget;
     main_layout = new QGridLayout;
@@ -28,6 +29,8 @@ Simulator::Simulator(QWidget *parent)
     main_state_layout = new QHBoxLayout;
     button_act_layout = new QHBoxLayout;
     legend = new QHBoxLayout;
+    dens1 = new QHBoxLayout;
+    dens2 = new QHBoxLayout;
 
     start_simulation = new QPushButton("Start");
     abort_simulation = new QPushButton("Abort");
@@ -36,6 +39,10 @@ Simulator::Simulator(QWidget *parent)
     save_to_csv = new QCheckBox("Save data to CSV");
     state_label = new QLabel("Not running...");
     setRed(state_label);
+    density = new QSpinBox;
+    trees_density = new QSpinBox;
+    density->setRange(0,100);
+    trees_density->setRange(0,100);
     steps_number = new QLCDNumber;
     steps_number->setDigitCount(3);
     steps_number->display(0);
@@ -61,6 +68,12 @@ Simulator::Simulator(QWidget *parent)
     gen_actions_layout->addWidget(save_to_csv);
     actions_layout->setLayout(gen_actions_layout);
     generation_layout->addWidget(actions_layout);
+    dens1->addWidget(Simulator::createLabel("Ratio Trees/Ground"));
+    dens1->addWidget(density);
+    dens2->addWidget(Simulator::createLabel("Ratio Trees/Grass"));
+    dens2->addWidget(trees_density);
+    generation_layout->addLayout(dens1);
+    generation_layout->addLayout(dens2);
     generation_layout->addStretch(1);
 
     main_state_layout->addWidget(state_label);
@@ -82,7 +95,9 @@ Simulator::Simulator(QWidget *parent)
     setStyleSheet("* { font-family: \"CMU Sans Serif\"; font-size: 14pt; }");
 
     // DATA INITIALIZATION :
-    readData();
+    connect(random_map, SIGNAL(clicked()), this, SLOT(generateRandom()));
+    connect(canvas, SIGNAL(paintEnd()), this, SLOT(resetStatusBar()));
+    statusBar()->showMessage("Ready");
 }
 
 Simulator::~Simulator()
@@ -105,6 +120,7 @@ void Simulator::setGreen(QLabel *pointer) {
 }
 
 void Simulator::serializeData() {
+    statusBar()->showMessage("Saving data...");
     QJsonArray data;
     for (int i = 0 ; i<Simulator::grid_size; i++) {
         for (int j = 0 ; j <Simulator::grid_size ; j++) {
@@ -119,6 +135,7 @@ void Simulator::serializeData() {
     QFile file(filename);
     file.open(QIODevice::WriteOnly);
     file.write(QJsonDocument(data).toJson());
+    resetStatusBar();
 }
 
 void Simulator::readData() {
@@ -133,4 +150,60 @@ void Simulator::readData() {
         grid_state[obj["x"].toInt()][obj["y"].toInt()] = obj["state"].toInt();
     }
     canvas->repaint();
+}
+
+void Simulator::generateRandom() {
+    statusBar()->showMessage("Generating map...");
+    int dgb = density->value();
+    int dhb = trees_density->value();
+    for (int i = 0 ; i<grid_size ; i++) {
+        for (int j=0; j<grid_size ; j++) {
+            int random = QRandomGenerator::global()->bounded(0,100);
+            random -= 5*voisinage(i,j);
+            if (random < dgb) {
+                random = QRandomGenerator::global()->bounded(0,100);
+                if (random < dhb) {
+                    grid_state[i][j] = 2;
+                } else {
+                    grid_state[i][j] = 1;
+                }
+            } else {
+                grid_state[i][j] = 0;
+            }
+        }
+    }
+    canvas->repaint();
+}
+
+void Simulator::resetStatusBar() {
+    statusBar()->showMessage("Ready");
+}
+
+int Simulator::voisinage(int i, int j) {
+    int nb = 0; // voisinage Von Neumann
+    if (i > 0) {
+        nb += grid_state[i-1][j] != 0;
+        if (j> 0) {
+            nb += grid_state[i-1][j-1] != 0;
+        }
+        if (j < grid_size-1) {
+            nb += grid_state[i-1][j+1] != 0;
+        }
+    }
+    if (j > 0) {
+        nb += grid_state[i][j-1] != 0;
+    }
+    if (i < grid_size-1) {
+        nb += grid_state[i+1][j] != 0;
+        if (j > 0) {
+            nb += grid_state[i+1][j-1] != 0;
+        }
+        if (j< grid_size-1) {
+            nb += grid_state[i+1][j+1] != 0;
+        }
+    }
+    if (j < grid_size-1) {
+        nb += grid_state[i][j+1] != 0;
+    }
+    return nb;
 }

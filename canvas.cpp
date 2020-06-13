@@ -24,10 +24,11 @@ void Canvas::paintEvent(QPaintEvent *event)
     updateGrid(&painter);
     paintGrid(&painter, Simulator::grid_size);
     painter.end();
+    emit paintEnd();
 }
 
 void Canvas::paintGrid(QPainter *painter, int n){
-    double pas = fixed_size/n;
+    double pas = fixed_size/(n);
     for (int i = 0 ; i<n+1 ; i++){
         painter->drawLine(0, pas*i, fixed_size, pas*i);
         for (int j = 0; j<n+1; j++) {
@@ -50,8 +51,6 @@ void Canvas::mousePressEvent(QMouseEvent *event) {
         int pas = fixed_size/Simulator::grid_size;
         Simulator::grid_state[event->x()/pas][event->y()/pas] = 3;
         repaint();
-        qDebug() << event->x()/pas;
-        qDebug() << event->y()/pas;
     }
 }
 
