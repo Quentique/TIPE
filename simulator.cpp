@@ -6,16 +6,15 @@
 #include <QJsonObject>
 #include <QFileDialog>
 #include <QRandomGenerator>
+#include "workerthread.h"
+#include <QDebug>
 
-// STATIC DATA INITIALIZATION :
-const QString Simulator::state_names[] = {QString("Ground"), QString("Grass"), QString("Tree"), QString("On Fire"), QString("Hot - Burnt"), QString("Burnt")};
-const QColor Simulator::state_colors[] = {QColor("tan"), QColor("chartreuse"), QColor("green"), QColor("red"), QColor("firebrick"), QColor("darkgrey")};
-int Simulator::grid_state[][Simulator::grid_size] = { {0} };
-bool Simulator::isStarted = false;
 
 Simulator::Simulator(QWidget *parent)
     : QMainWindow(parent)
 {
+    calculusState = 0;
+    nbThreadDone = 0;
     QGridLayout *main_layout;
     QGroupBox *actions_layout;
     QHBoxLayout *main_state_layout, *button_act_layout, *legend, *dens1, *dens2;
@@ -49,12 +48,12 @@ Simulator::Simulator(QWidget *parent)
 
     canvas = new Canvas;
 
-    for (int i = 0 ; i<Simulator::nb_states ; i++)
+    for (int i = 0 ; i<Data::nb_states ; i++)
     {
         QHBoxLayout *container = new QHBoxLayout;
-        QLabel *text = new QLabel(Simulator::state_names[i]);
+        QLabel *text = new QLabel(Data::state_names[i]);
         QLabel *color = new QLabel("bla");
-        color->setStyleSheet("QLabel { color: "+Simulator::state_colors[i].name()+";  background-color: "+ Simulator::state_colors[i].name()+";}");
+        color->setStyleSheet("QLabel { color: "+Data::state_colors[i].name()+";  background-color: "+ Data::state_colors[i].name()+";}");
         container->addWidget(color);
         container->addWidget(text);
         legend->addLayout(container);
@@ -94,15 +93,27 @@ Simulator::Simulator(QWidget *parent)
     setCentralWidget(window);
     setStyleSheet("* { font-family: \"CMU Sans Serif\"; font-size: 14pt; }");
 
+
+    // CALCULUS ENGINE INITIALIZATION :
+    thread1 = new WorkerThread(this, &lock, &cond, 0);
+    thread2 = new WorkerThread(this, &lock, &cond, 1);
+
+    connect(thread1, SIGNAL(calculusEnded()), this, SLOT(calculusDone()));
+    connect(thread2, SIGNAL(calculusEnded()), this, SLOT(calculusDone()));
+    connect(thread1, SIGNAL(done()), this, SLOT(updateMap()));
+    connect(thread2, SIGNAL(done()), this, SLOT(updateMap()));
+
     // DATA INITIALIZATION :
     connect(random_map, SIGNAL(clicked()), this, SLOT(generateRandom()));
     connect(canvas, SIGNAL(paintEnd()), this, SLOT(resetStatusBar()));
+    connect(start_simulation, SIGNAL(clicked()), this, SLOT(startSimulation()));
     statusBar()->showMessage("Ready");
 }
 
 Simulator::~Simulator()
 {
-
+    thread1->terminate();
+    thread2->terminate();
 }
 
 QLabel *Simulator::createLabel(const QString &text)
@@ -122,12 +133,12 @@ void Simulator::setGreen(QLabel *pointer) {
 void Simulator::serializeData() {
     statusBar()->showMessage("Saving data...");
     QJsonArray data;
-    for (int i = 0 ; i<Simulator::grid_size; i++) {
-        for (int j = 0 ; j <Simulator::grid_size ; j++) {
+    for (int i = 0 ; i<Data::grid_size; i++) {
+        for (int j = 0 ; j <Data::grid_size ; j++) {
             QJsonObject obj;
             obj["x"] = i;
             obj["y"] = j;
-            obj["state"] = Simulator::grid_state[i][j];
+            obj["state"] = Data::grid_state[i][j];
             data.append(obj);
         }
     }
@@ -147,7 +158,7 @@ void Simulator::readData() {
     QJsonArray array = doc.array();
     for (int i = 0 ; i<array.count() ; i++) {
         QJsonObject obj = array[i].toObject();
-        grid_state[obj["x"].toInt()][obj["y"].toInt()] = obj["state"].toInt();
+        Data::grid_state[obj["x"].toInt()][obj["y"].toInt()] = obj["state"].toInt();
     }
     canvas->repaint();
 }
@@ -156,54 +167,95 @@ void Simulator::generateRandom() {
     statusBar()->showMessage("Generating map...");
     int dgb = density->value();
     int dhb = trees_density->value();
-    for (int i = 0 ; i<grid_size ; i++) {
-        for (int j=0; j<grid_size ; j++) {
+    for (int i = 0 ; i<Data::grid_size ; i++) {
+        for (int j=0; j<Data::grid_size ; j++) {
             int random = QRandomGenerator::global()->bounded(0,100);
-            random -= 5*voisinage(i,j);
+            random -= 7*voisinage(i,j);
             if (random < dgb) {
                 random = QRandomGenerator::global()->bounded(0,100);
                 if (random < dhb) {
-                    grid_state[i][j] = 2;
+                    Data::grid_state[i][j] = 2;
                 } else {
-                    grid_state[i][j] = 1;
+                    Data::grid_state[i][j] = 1;
                 }
             } else {
-                grid_state[i][j] = 0;
+                Data::grid_state[i][j] = 0;
             }
         }
     }
     canvas->repaint();
 }
 
+void Simulator::calculusDone() {
+    nbThreadDone += 1;
+    qDebug() << "Calculus done";
+    qDebug() <<Data::thread_nb;
+    qDebug() << nbThreadDone;
+    if (nbThreadDone >= Data::thread_nb) {
+        qDebug() << "Defreezing called";
+        nbThreadDone = 0;
+        cond.wakeAll();
+    }
+}
+
 void Simulator::resetStatusBar() {
     statusBar()->showMessage("Ready");
+}
+
+void Simulator::updateMap() {
+
+    nbThreadDone += 1;
+    qDebug() << "Update called";
+    if (nbThreadDone >= Data::thread_nb) {
+        nbThreadDone =0;
+        for (int i = 0 ; i<Data::grid_size;i++) {
+            for (int j = 0 ; j<Data::grid_size;j++) {
+
+                if (Data::grid_energy[i][j] == 100) {
+                    Data::grid_state[i][j] = 1;
+                } else if (Data::grid_energy[i][j] == 200) {
+                    Data::grid_state[i][j] = 2;
+                } else {
+                    Data::grid_state[i][j] = 0;
+                }
+            }
+        }
+        cond.wait(&lock);
+        canvas->repaint();
+    }
+}
+
+void Simulator::startSimulation() {
+    thread1->start();
+    thread2->start();
 }
 
 int Simulator::voisinage(int i, int j) {
     int nb = 0; // voisinage Von Neumann
     if (i > 0) {
-        nb += grid_state[i-1][j] != 0;
+        nb += Data::grid_state[i-1][j] != 0;
         if (j> 0) {
-            nb += grid_state[i-1][j-1] != 0;
+            nb += Data::grid_state[i-1][j-1] != 0;
         }
-        if (j < grid_size-1) {
-            nb += grid_state[i-1][j+1] != 0;
+        if (j < Data::grid_size-1) {
+            nb += Data::grid_state[i-1][j+1] != 0;
         }
     }
     if (j > 0) {
-        nb += grid_state[i][j-1] != 0;
+        nb += Data::grid_state[i][j-1] != 0;
     }
-    if (i < grid_size-1) {
-        nb += grid_state[i+1][j] != 0;
+    if (i < Data::grid_size-1) {
+        nb += Data::grid_state[i+1][j] != 0;
         if (j > 0) {
-            nb += grid_state[i+1][j-1] != 0;
+            nb += Data::grid_state[i+1][j-1] != 0;
         }
-        if (j< grid_size-1) {
-            nb += grid_state[i+1][j+1] != 0;
+        if (j< Data::grid_size-1) {
+            nb += Data::grid_state[i+1][j+1] != 0;
         }
     }
-    if (j < grid_size-1) {
-        nb += grid_state[i][j+1] != 0;
+    if (j < Data::grid_size-1) {
+        nb += Data::grid_state[i][j+1] != 0;
     }
     return nb;
 }
+

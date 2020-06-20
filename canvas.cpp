@@ -22,7 +22,7 @@ void Canvas::paintEvent(QPaintEvent *event)
     painter.setRenderHint(QPainter::Antialiasing);
     painter.fillRect(event->rect(), Qt::white);
     updateGrid(&painter);
-    paintGrid(&painter, Simulator::grid_size);
+    paintGrid(&painter, Data::grid_size);
     painter.end();
     emit paintEnd();
 }
@@ -38,18 +38,18 @@ void Canvas::paintGrid(QPainter *painter, int n){
 }
 
 void Canvas::updateGrid(QPainter *painter){
-    double pas = fixed_size/Simulator::grid_size;
-    for (int i = 0 ; i < Simulator::grid_size; i++) {
-        for (int j = 0 ; j < Simulator::grid_size; j++) {
-            painter->fillRect(i*pas, j*pas, pas, pas, Simulator::state_colors[Simulator::grid_state[i][j]]);
+    double pas = fixed_size/Data::grid_size;
+    for (int i = 0 ; i < Data::grid_size; i++) {
+        for (int j = 0 ; j < Data::grid_size; j++) {
+            painter->fillRect(i*pas, j*pas, pas, pas, Data::state_colors[Data::grid_state[i][j]]);
 
         }
     }
 }
 void Canvas::mousePressEvent(QMouseEvent *event) {
-    if (!Simulator::isStarted) {
-        int pas = fixed_size/Simulator::grid_size;
-        Simulator::grid_state[event->x()/pas][event->y()/pas] = 3;
+    if (!Data::isStarted) {
+        int pas = fixed_size/Data::grid_size;
+        Data::grid_state[event->x()/pas][event->y()/pas] = 3;
         repaint();
     }
 }

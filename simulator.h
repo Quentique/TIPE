@@ -10,11 +10,16 @@
 #include <QLCDNumber>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QReadWriteLock>
+#include <QWaitCondition>
+#include <QThread>
 #include "canvas.h"
+#include "workerthread.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Simulator; }
 QT_END_NAMESPACE
+
 
 class Simulator : public QMainWindow
 {
@@ -23,19 +28,18 @@ class Simulator : public QMainWindow
 public:
     Simulator(QWidget *parent = nullptr);
     ~Simulator();
-    static const int nb_states = 6; // Number of available states
-    static const int grid_size = 64; // Grid size (in units)
-    static int grid_state[grid_size][grid_size];
-    static const QString state_names[nb_states]; // Names of states (on fire, burnt, etc.)
-    static const QColor state_colors[nb_states];
-    static bool isStarted;
 
 public slots:
     void generateRandom();
     void resetStatusBar();
+    void updateMap();
+    void calculusDone();
+    void startSimulation();
+
 private:
 
-
+    QReadWriteLock lock;
+    QWaitCondition cond;
     QWidget *window;
     QPushButton *start_simulation, *abort_simulation, *random_map;
     QCheckBox *record, *save_to_csv;
@@ -43,6 +47,7 @@ private:
     QLabel *state_label;
     QLCDNumber *steps_number;
     Canvas *canvas;
+    WorkerThread *thread1, *thread2;
 
     static void setRed(QLabel *pointer);
     static void setGreen(QLabel *pointer);
@@ -53,5 +58,9 @@ private:
 
     int voisinage(int i, int j);
 
+    int calculusState, nbThreadDone;
+
 };
+
+
 #endif // SIMULATOR_H

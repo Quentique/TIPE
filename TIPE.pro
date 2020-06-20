@@ -17,12 +17,16 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     canvas.cpp \
+    data.cpp \
     main.cpp \
-    simulator.cpp
+    simulator.cpp \
+    workerthread.cpp
 
 HEADERS += \
     canvas.h \
-    simulator.h
+    data.h \
+    simulator.h \
+    workerthread.h
 
 FORMS += \
     simulator.ui
