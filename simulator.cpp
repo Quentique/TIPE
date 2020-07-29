@@ -124,6 +124,7 @@ Simulator::Simulator(QWidget *parent)
     connect(canvas, SIGNAL(paintEndedThread()), this, SLOT(refreshDone()));
     connect(start_simulation, SIGNAL(clicked()), this, SLOT(startSimulation()));
     connect(record, SIGNAL(stateChanged(int)), this, SLOT(record_box_change(int)));
+    connect(abort_simulation, SIGNAL(clicked()), this, SLOT(abordButton()));
     statusBar()->showMessage("Ready");
     grab().save("test.png");
 }
@@ -192,7 +193,7 @@ void Simulator::generateRandom() {
     for (int i = 0 ; i<Data::grid_size ; i++) {
         for (int j=0; j<Data::grid_size ; j++) {
             int random = QRandomGenerator::global()->bounded(0,100);
-            random -= 7*voisinage(i,j);
+            random -= 7*voisinage(i,j, Data::STATE_GROUND);
             if (random < dgb) {
                 random = QRandomGenerator::global()->bounded(0,100);
                 if (random < dhb) {
@@ -215,6 +216,12 @@ void Simulator::generateRandom() {
         }
     }
     canvas->repaint();
+}
+
+void Simulator::abordButton() {
+    thread1->terminate();
+    thread2->terminate();
+    start_simulation->setDisabled(false);
 }
 
 void Simulator::calculusDone() {
@@ -247,7 +254,7 @@ void Simulator::updateMap() {
     qDebug() << "Update called";
     if (nbThreadDone >= Data::thread_nb) {
         nbThreadDone =0;
-        for (int i = 0 ; i<Data::grid_size;i++) {
+        /*for (int i = 0 ; i<Data::grid_size;i++) {
             for (int j = 0 ; j<Data::grid_size;j++) {
 
                 if (Data::grid_energy[i][j] == 100) {
@@ -258,11 +265,13 @@ void Simulator::updateMap() {
                     Data::grid_state[i][j] = 0;
                 }
             }
-        }
-        cond.wait(&lock);
+        }*/
+
         canvas->repaint();
         calculusState += 1;
         steps_number->display(calculusState);
+        cond.wait(&lock,10000);
+        cond.wakeAll();
     }
 }
 
@@ -276,6 +285,7 @@ void Simulator::startSimulation() {
     }
     thread1->start();
     thread2->start();
+    start_simulation->setDisabled(true);
 }
 
 void Simulator::record_box_change(int state) {

@@ -25,28 +25,28 @@ Data::Data()
 int Data::voisinage(int i, int j, int state = 0) {
     int nb = 0; // voisinage Von Neumann
     if (i > 0) {
-        nb += Data::grid_state[i-1][j] != state;
+        nb += Data::grid_state[i-1][j] == state;
         if (j> 0) {
-            nb += Data::grid_state[i-1][j-1] != state;
+            nb += Data::grid_state[i-1][j-1] == state;
         }
         if (j < Data::grid_size-1) {
-            nb += Data::grid_state[i-1][j+1] != state;
+            nb += Data::grid_state[i-1][j+1] == state;
         }
     }
     if (j > 0) {
-        nb += Data::grid_state[i][j-1] != state;
+        nb += Data::grid_state[i][j-1] == state;
     }
     if (i < Data::grid_size-1) {
-        nb += Data::grid_state[i+1][j] != state;
+        nb += Data::grid_state[i+1][j] == state;
         if (j > 0) {
-            nb += Data::grid_state[i+1][j-1] != state;
+            nb += Data::grid_state[i+1][j-1] == state;
         }
         if (j< Data::grid_size-1) {
-            nb += Data::grid_state[i+1][j+1] != state;
+            nb += Data::grid_state[i+1][j+1] == state;
         }
     }
     if (j < Data::grid_size-1) {
-        nb += Data::grid_state[i][j+1] != state;
+        nb += Data::grid_state[i][j+1] == state;
     }
     return nb;
 }

@@ -70,6 +70,7 @@ double WorkerThread::test1(int i, int j) {
 }
 
 double WorkerThread::test2(int i, int j) {
+    // BURNING...
     if (Data::grid_to_burn[i][j] > 0 && Data::grid_state[i][j] == Data::STATE_ON_FIRE) {
         return -1;
     } else {
