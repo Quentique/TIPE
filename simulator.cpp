@@ -20,6 +20,8 @@
 Simulator::Simulator(QWidget *parent)
     : QMainWindow(parent)
 {
+    isStarted = false;
+    isRunning = false;
     record_bool = false;
     calculusState = 0;
     nbThreadDone = 0;
@@ -219,9 +221,13 @@ void Simulator::generateRandom() {
 }
 
 void Simulator::abordButton() {
-    thread1->terminate();
-    thread2->terminate();
+    //thread1->requestStop();
+    //thread2->requestStop();
     start_simulation->setDisabled(false);
+    state_label->setText("Stopped");
+    setRed(state_label);
+    isRunning = false;
+    cond.wait(&lock);
 }
 
 void Simulator::calculusDone() {
@@ -271,20 +277,31 @@ void Simulator::updateMap() {
         calculusState += 1;
         steps_number->display(calculusState);
         cond.wait(&lock,10000);
-        cond.wakeAll();
+        if (isRunning) {
+            cond.wakeAll();
+        }
     }
 }
 
 void Simulator::startSimulation() {
+    isRunning = true;
     simulation_name_record = simulation_name->text();
+    state_label->setText("Running...");
+    setGreen(state_label);
     simulation_name->setReadOnly(true);
-    for (int i = 0 ; i<Data::grid_size;i++) {
-        for (int j = 0 ; j<Data::grid_size;j++) {
-            Data::grid_to_burn[i][j] = static_cast<int>(ceil(Data::grid_tree_height[i][j]));
+    if (isStarted) {
+        qDebug() << "Restart requested";
+        cond.wakeAll();
+    } else {
+        for (int i = 0 ; i<Data::grid_size;i++) {
+            for (int j = 0 ; j<Data::grid_size;j++) {
+                Data::grid_to_burn[i][j] = static_cast<int>(ceil(Data::grid_tree_height[i][j]));
+            }
         }
+        thread1->start();
+        thread2->start();
+        isStarted = true;
     }
-    thread1->start();
-    thread2->start();
     start_simulation->setDisabled(true);
 }
 

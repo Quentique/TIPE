@@ -14,11 +14,14 @@ public:
     void run() override;
     double test1(int i, int j);
     double test2(int i, int j);
-
+    void requestStop();
+    void requestRestart();
 signals:
     void calculusEnded();
     void done();
 private:
+    bool stopRequested;
+
     QReadWriteLock* lock;
     QWaitCondition* cond;
     double grid_energy[Data::grid_size][Data::grid_size] ={{0}};

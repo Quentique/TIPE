@@ -71,7 +71,7 @@ private:
     QString simulation_name_record;
 
     bool record_bool;
-
+    bool isStarted, isRunning;
 };
 
 

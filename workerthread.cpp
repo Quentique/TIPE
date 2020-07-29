@@ -6,12 +6,15 @@ WorkerThread::WorkerThread(QObject *parent, QReadWriteLock *locker, QWaitConditi
     lock = locker;
     cond = condition;
     action = station;
+    stopRequested = false;
 }
 
 void WorkerThread::run() {
     forever{
         lock->lockForRead();
-
+        if (stopRequested) {
+            break;
+        }
         switch (action) {
             case 0:
             for (int i =0 ;i<Data::grid_size; i++) {
@@ -55,6 +58,19 @@ void WorkerThread::run() {
         cond->wait(lock);
         lock->unlock();
     }
+}
+
+void WorkerThread::requestStop() {
+    lock->lockForWrite();
+    stopRequested = true;
+    lock->unlock();
+}
+
+void WorkerThread::requestRestart() {
+    lock->lockForWrite();
+    stopRequested = false;
+    lock->unlock();
+    run();
 }
 double WorkerThread::test1(int i, int j) {
     // SET ON FIRE ACCORDING TO CURRENT STATE
