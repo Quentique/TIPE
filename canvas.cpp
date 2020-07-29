@@ -8,6 +8,7 @@
 
 Canvas::Canvas() : QOpenGLWidget()
 {
+    trigger = false;
     whiteBackground = new QBrush(Qt::white);
     black = new QPen(Qt::black);
     setFixedSize(fixed_size-2,fixed_size-2);
@@ -25,6 +26,9 @@ void Canvas::paintEvent(QPaintEvent *event)
     paintGrid(&painter, Data::grid_size);
     painter.end();
     emit paintEnd();
+    if (trigger) {
+        emit paintEndedThread();
+    }
 }
 
 void Canvas::paintGrid(QPainter *painter, int n){
@@ -56,4 +60,9 @@ void Canvas::mousePressEvent(QMouseEvent *event) {
 
 int Canvas::caseNumber(int xpos, int ypos, int grid_size, int widget_size) {
     return xpos/(widget_size/grid_size)+ypos/(widget_size/grid_size)*grid_size;
+}
+
+void Canvas::refresh() {
+    trigger = true;
+    repaint();
 }

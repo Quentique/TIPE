@@ -11,6 +11,7 @@ class Canvas : public QOpenGLWidget
 public:
     Canvas();
     static int caseNumber(int xpos, int ypos, int grid_size, int widget_size);
+    void refresh();
 protected:
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -18,11 +19,13 @@ protected:
     void updateGrid(QPainter *painter);
 signals:
     void paintEnd();
+    void paintEndedThread();
 private:
 
     static const int fixed_size = 920; // Size of grid in pixels
     QBrush *whiteBackground;
     QPen *black;
+    bool trigger;
 
 };
 

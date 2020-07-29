@@ -5,6 +5,7 @@
 #include <QLabel>
 #include <QGridLayout>
 #include <QPushButton>
+#include <QLineEdit>
 #include <QCheckBox>
 #include <QSpinBox>
 #include <QLCDNumber>
@@ -35,6 +36,9 @@ public slots:
     void updateMap();
     void calculusDone();
     void startSimulation();
+    void record_box_change(int state);
+
+    void refreshDone();
 
 private:
 
@@ -48,6 +52,7 @@ private:
     QLCDNumber *steps_number;
     Canvas *canvas;
     WorkerThread *thread1, *thread2;
+    QLineEdit *simulation_name;
 
     static void setRed(QLabel *pointer);
     static void setGreen(QLabel *pointer);
@@ -56,9 +61,15 @@ private:
     void serializeData();
     void readData();
 
+    void saveScreenshot();
+
     int voisinage(int i, int j);
 
     int calculusState, nbThreadDone;
+
+    QString simulation_name_record;
+
+    bool record_bool;
 
 };
 

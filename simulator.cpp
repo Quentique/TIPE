@@ -8,11 +8,16 @@
 #include <QRandomGenerator>
 #include "workerthread.h"
 #include <QDebug>
-
+#include <QDir>
+#include <QMessageBox>
+#include <QRect>
+#include <QPoint>
+#include <QPainter>
 
 Simulator::Simulator(QWidget *parent)
     : QMainWindow(parent)
 {
+    record_bool = false;
     calculusState = 0;
     nbThreadDone = 0;
     QGridLayout *main_layout;
@@ -31,6 +36,9 @@ Simulator::Simulator(QWidget *parent)
     dens1 = new QHBoxLayout;
     dens2 = new QHBoxLayout;
 
+    simulation_name = new QLineEdit;
+    simulation_name->setReadOnly(true);
+    simulation_name->setPlaceholderText("Simulation name");
     start_simulation = new QPushButton("Start");
     abort_simulation = new QPushButton("Abort");
     random_map = new QPushButton("Random map");
@@ -59,11 +67,15 @@ Simulator::Simulator(QWidget *parent)
         legend->addLayout(container);
     }
 
+    simulation_name_record = "";
+
+
     button_act_layout->addWidget(start_simulation);
     button_act_layout->addWidget(abort_simulation);
     gen_actions_layout->addLayout(button_act_layout);
     gen_actions_layout->addWidget(random_map);
     gen_actions_layout->addWidget(record);
+    gen_actions_layout->addWidget(simulation_name);
     gen_actions_layout->addWidget(save_to_csv);
     actions_layout->setLayout(gen_actions_layout);
     generation_layout->addWidget(actions_layout);
@@ -106,8 +118,11 @@ Simulator::Simulator(QWidget *parent)
     // DATA INITIALIZATION :
     connect(random_map, SIGNAL(clicked()), this, SLOT(generateRandom()));
     connect(canvas, SIGNAL(paintEnd()), this, SLOT(resetStatusBar()));
+    connect(canvas, SIGNAL(paintEndedThread()), this, SLOT(refreshDone()));
     connect(start_simulation, SIGNAL(clicked()), this, SLOT(startSimulation()));
+    connect(record, SIGNAL(stateChanged(int)), this, SLOT(record_box_change(int)));
     statusBar()->showMessage("Ready");
+    grab().save("test.png");
 }
 
 Simulator::~Simulator()
@@ -147,6 +162,7 @@ void Simulator::serializeData() {
     file.open(QIODevice::WriteOnly);
     file.write(QJsonDocument(data).toJson());
     resetStatusBar();
+
 }
 
 void Simulator::readData() {
@@ -189,7 +205,7 @@ void Simulator::generateRandom() {
 void Simulator::calculusDone() {
     nbThreadDone += 1;
     qDebug() << "Calculus done";
-    qDebug() <<Data::thread_nb;
+    qDebug() << Data::thread_nb;
     qDebug() << nbThreadDone;
     if (nbThreadDone >= Data::thread_nb) {
         qDebug() << "Defreezing called";
@@ -202,6 +218,14 @@ void Simulator::resetStatusBar() {
     statusBar()->showMessage("Ready");
 }
 
+void Simulator::saveScreenshot() {
+    qDebug() << "being called save Screenshots";
+}
+
+void Simulator::refreshDone() {
+
+
+}
 void Simulator::updateMap() {
 
     nbThreadDone += 1;
@@ -222,12 +246,31 @@ void Simulator::updateMap() {
         }
         cond.wait(&lock);
         canvas->repaint();
+        calculusState += 1;
+        steps_number->display(calculusState);
     }
 }
 
 void Simulator::startSimulation() {
-    thread1->start();
-    thread2->start();
+    simulation_name_record = simulation_name->text();
+    simulation_name->setReadOnly(true);
+    if (QDir().mkdir(simulation_name_record)) {
+        thread1->start();
+        thread2->start();
+    } else {
+        QMessageBox::warning(this, "Directory problem", "Can't create directory for screenshots. Simulation aborted.");
+    }
+}
+
+void Simulator::record_box_change(int state) {
+    if (state == Qt::Unchecked) {
+        simulation_name->setText("");
+        simulation_name->setReadOnly(true);
+        record_bool = false;
+    } else {
+        simulation_name->setReadOnly(false);
+        record_bool = true;
+    }
 }
 
 int Simulator::voisinage(int i, int j) {
