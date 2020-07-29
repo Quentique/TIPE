@@ -21,7 +21,9 @@ signals:
 private:
     QReadWriteLock* lock;
     QWaitCondition* cond;
-    double grid[Data::grid_size][Data::grid_size] ={{0}};
+    double grid_energy[Data::grid_size][Data::grid_size] ={{0}};
+    int grid_state[Data::grid_size][Data::grid_size] = {{0}};
+    int grid_to_burn[Data::grid_size][Data::grid_size] = {{0}};
     int action;
     int* data[][Data::grid_size];
 };

@@ -1,6 +1,9 @@
 #include "simulator.h"
 #include "ui_simulator.h"
 
+#include <cmath>
+#include <random>
+
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -183,6 +186,9 @@ void Simulator::generateRandom() {
     statusBar()->showMessage("Generating map...");
     int dgb = density->value();
     int dhb = trees_density->value();
+   // std::default_random_engine generator;
+    std::normal_distribution<double> distribution(Data::average_height_trees, Data::standard_deviation_trees_height);
+
     for (int i = 0 ; i<Data::grid_size ; i++) {
         for (int j=0; j<Data::grid_size ; j++) {
             int random = QRandomGenerator::global()->bounded(0,100);
@@ -191,8 +197,17 @@ void Simulator::generateRandom() {
                 random = QRandomGenerator::global()->bounded(0,100);
                 if (random < dhb) {
                     Data::grid_state[i][j] = 2;
+                    double height = distribution(*QRandomGenerator::global());
+                    if (height < Data::min_height_trees) {
+                        Data::grid_tree_height[i][j] = Data::min_height_trees;
+                    } else if (height > Data::max_height_trees) {
+                        Data::grid_tree_height[i][j] = Data::max_height_trees;
+                    } else {
+                        Data::grid_tree_height[i][j] = height;
+                    }
                 } else {
                     Data::grid_state[i][j] = 1;
+                    Data::grid_tree_height[i][j] = 0.45;
                 }
             } else {
                 Data::grid_state[i][j] = 0;
@@ -254,12 +269,13 @@ void Simulator::updateMap() {
 void Simulator::startSimulation() {
     simulation_name_record = simulation_name->text();
     simulation_name->setReadOnly(true);
-    if (QDir().mkdir(simulation_name_record)) {
-        thread1->start();
-        thread2->start();
-    } else {
-        QMessageBox::warning(this, "Directory problem", "Can't create directory for screenshots. Simulation aborted.");
+    for (int i = 0 ; i<Data::grid_size;i++) {
+        for (int j = 0 ; j<Data::grid_size;j++) {
+            Data::grid_to_burn[i][j] = static_cast<int>(ceil(Data::grid_tree_height[i][j]));
+        }
     }
+    thread1->start();
+    thread2->start();
 }
 
 void Simulator::record_box_change(int state) {
@@ -273,31 +289,31 @@ void Simulator::record_box_change(int state) {
     }
 }
 
-int Simulator::voisinage(int i, int j) {
+int Simulator::voisinage(int i, int j, int state = 0) {
     int nb = 0; // voisinage Von Neumann
     if (i > 0) {
-        nb += Data::grid_state[i-1][j] != 0;
+        nb += Data::grid_state[i-1][j] != state;
         if (j> 0) {
-            nb += Data::grid_state[i-1][j-1] != 0;
+            nb += Data::grid_state[i-1][j-1] != state;
         }
         if (j < Data::grid_size-1) {
-            nb += Data::grid_state[i-1][j+1] != 0;
+            nb += Data::grid_state[i-1][j+1] != state;
         }
     }
     if (j > 0) {
-        nb += Data::grid_state[i][j-1] != 0;
+        nb += Data::grid_state[i][j-1] != state;
     }
     if (i < Data::grid_size-1) {
-        nb += Data::grid_state[i+1][j] != 0;
+        nb += Data::grid_state[i+1][j] != state;
         if (j > 0) {
-            nb += Data::grid_state[i+1][j-1] != 0;
+            nb += Data::grid_state[i+1][j-1] != state;
         }
         if (j< Data::grid_size-1) {
-            nb += Data::grid_state[i+1][j+1] != 0;
+            nb += Data::grid_state[i+1][j+1] != state;
         }
     }
     if (j < Data::grid_size-1) {
-        nb += Data::grid_state[i][j+1] != 0;
+        nb += Data::grid_state[i][j+1] != state;
     }
     return nb;
 }

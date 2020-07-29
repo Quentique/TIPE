@@ -28,6 +28,7 @@ class Simulator : public QMainWindow
 
 public:
     Simulator(QWidget *parent = nullptr);
+    static int voisinage(int i, int j, int state);
     ~Simulator();
 
 public slots:
@@ -63,7 +64,7 @@ private:
 
     void saveScreenshot();
 
-    int voisinage(int i, int j);
+
 
     int calculusState, nbThreadDone;
 
