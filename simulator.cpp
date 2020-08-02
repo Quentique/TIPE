@@ -191,6 +191,8 @@ void Simulator::serializeData() {
             obj["x"] = i;
             obj["y"] = j;
             obj["state"] = Data::grid_state[i][j];
+            obj["tree_height"] = Data::grid_tree_height[i][j];
+            obj["moisture"] = Data::grid_moisture[i][j];
             data.append(obj);
         }
     }
@@ -212,6 +214,8 @@ void Simulator::readData() {
     for (int i = 0 ; i<array.count() ; i++) {
         QJsonObject obj = array[i].toObject();
         Data::grid_state[obj["x"].toInt()][obj["y"].toInt()] = obj["state"].toInt();
+        Data::grid_tree_height[obj["x"].toInt()][obj["y"].toInt()] = obj["tree_height"].toDouble();
+        Data::grid_moisture[obj["x"].toInt()][obj["y"].toInt()] = obj["moisture"].toDouble();
     }
     canvas->repaint();
 }
@@ -234,6 +238,7 @@ void Simulator::generateRandom() {
         for (int j=0; j<Data::grid_size ; j++) {
             int random = QRandomGenerator::global()->bounded(0,100);
             random -= 7*voisinage(i,j, Data::STATE_GROUND);
+            Data::setupCase(i, j);
             if (random < dgb) {
                 random = QRandomGenerator::global()->bounded(0,100);
                 if (random < dhb) {

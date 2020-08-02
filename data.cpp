@@ -8,6 +8,7 @@ int Data::grid_state[][Data::grid_size] = { {0} };
 
 double Data::grid_energy[][Data::grid_size] = {{0}};
 double Data::grid_tree_height[][Data::grid_size] = {{0}};
+double Data::grid_moisture[][Data::grid_size] = {{0}};
 bool Data::isStarted = false;
 
 int Data::grid_to_burn[][Data::grid_size] = { {0} }; // FOR PERCOLATION MODELING ONLY
@@ -23,6 +24,9 @@ Data::Data()
 
 }
 
+void Data::setupCase(int i, int j) {
+    Data::grid_moisture[i][j] = generateHumidityLevel(i,j);
+}
 void Data::setupTree(int i, int j) {
     Data::grid_state[i][j] = 2;
     std::normal_distribution<double> distribution(Data::average_height_trees, Data::standard_deviation_trees_height);
@@ -43,6 +47,11 @@ void Data::setupGrass(int i, int j) {
 
 void Data::setupGround(int i, int j) {
     Data::grid_state[i][j] = Data::STATE_GROUND;
+}
+
+void Data::setupWater(int i, int j){
+    Data::grid_state[i][j] = Data::STATE_WATER;
+    Data::grid_moisture[i][j] = 1.0;
 }
 
 int Data::voisinage(int i, int j, int state = 0) {
@@ -72,4 +81,19 @@ int Data::voisinage(int i, int j, int state = 0) {
         nb += Data::grid_state[i][j+1] == state;
     }
     return nb;
+}
+
+double Data::generateHumidityLevel(int i, int j){
+    int voi = voisinage(i, j, Data::STATE_WATER);
+    if (voi == 0) {
+        return average_moisture;
+    } else {
+        double level = exp(-1/voi);
+        if (level < average_moisture) {
+            return average_moisture;
+        } else {
+            return level;
+        }
+
+    }
 }

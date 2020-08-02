@@ -26,6 +26,7 @@ public:
     static double grid_energy[grid_size][grid_size];
     static double grid_tree_height[grid_size][grid_size];
     static int grid_to_burn[grid_size][grid_size];
+    static double grid_moisture[grid_size][grid_size];
     static const QString state_names[nb_states]; // Names of states (on fire, burnt, etc.)
     static const QColor state_colors[nb_states];
     static bool isStarted;
@@ -41,6 +42,10 @@ public:
     static void setupTree(int i, int j);
     static void setupWater(int i, int j);
     static void setupGround(int i, int j);
+    static void setupCase(int i, int j);
+
+    static double generateHumidityLevel(int i, int j);
+
 
 };
 
