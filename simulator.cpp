@@ -10,13 +10,16 @@
 #include <QFileDialog>
 #include <QRandomGenerator>
 #include "workerthread.h"
+#include "flowlayout.h"
 #include <QDebug>
 #include <QDir>
 #include <QMessageBox>
 #include <QRect>
 #include <QPoint>
 #include <QPainter>
+#include <QProcess>
 
+int Simulator::currently_selected_state = 0;
 Simulator::Simulator(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -28,6 +31,7 @@ Simulator::Simulator(QWidget *parent)
     QGridLayout *main_layout;
     QGroupBox *actions_layout;
     QHBoxLayout *main_state_layout, *button_act_layout, *legend, *dens1, *dens2;
+    FlowLayout *map_edition_layout;
     QVBoxLayout *state_layout, *generation_layout, *gen_actions_layout;
     window = new QWidget;
     main_layout = new QGridLayout;
@@ -40,12 +44,17 @@ Simulator::Simulator(QWidget *parent)
     legend = new QHBoxLayout;
     dens1 = new QHBoxLayout;
     dens2 = new QHBoxLayout;
+    map_edition_layout = new FlowLayout;
+
 
     simulation_name = new QLineEdit;
     simulation_name->setReadOnly(true);
     simulation_name->setPlaceholderText("Simulation name");
     start_simulation = new QPushButton("Start");
     abort_simulation = new QPushButton("Abort");
+    open_file = new QPushButton("Open map");
+    save_file = new QPushButton("Save map");
+    restart_button = new QPushButton("Reset");
     random_map = new QPushButton("Random map");
     record = new QCheckBox("Record");
     save_to_csv = new QCheckBox("Save data to CSV");
@@ -61,6 +70,7 @@ Simulator::Simulator(QWidget *parent)
 
     canvas = new Canvas;
 
+    map_edition_group = new QButtonGroup;
     for (int i = 0 ; i<Data::nb_states ; i++)
     {
         QHBoxLayout *container = new QHBoxLayout;
@@ -70,20 +80,38 @@ Simulator::Simulator(QWidget *parent)
         container->addWidget(color);
         container->addWidget(text);
         legend->addLayout(container);
-    }
 
+        QPushButton* button = new QPushButton("     ");
+        button->setStyleSheet("background-color: " + Data::state_colors[i].name() +"; border: none;");
+        button->setToolTip(Data::state_names[i]);
+        // button->setDisabled(true);
+        map_edition_group->addButton(button, i);
+        map_edition_layout->addWidget(button);
+       // buttons_edition_map.append(button);
+    }
+    map_edition_group->buttons().first()->setText("  X  ");
+    connect(map_edition_group, SIGNAL(buttonClicked(int)), this, SLOT(selectionEditionMapButton(int)));
     simulation_name_record = "";
 
 
     button_act_layout->addWidget(start_simulation);
     button_act_layout->addWidget(abort_simulation);
     gen_actions_layout->addLayout(button_act_layout);
-    gen_actions_layout->addWidget(random_map);
     gen_actions_layout->addWidget(record);
     gen_actions_layout->addWidget(simulation_name);
     gen_actions_layout->addWidget(save_to_csv);
     actions_layout->setLayout(gen_actions_layout);
     generation_layout->addWidget(actions_layout);
+    generation_layout->addWidget(open_file);
+    generation_layout->addWidget(save_file);
+    generation_layout->addWidget(restart_button);
+    QFrame *line = new QFrame;
+    line->setFrameShape(QFrame::HLine);
+    line->setFrameShadow(QFrame::Sunken);
+    generation_layout->addWidget(line);
+    generation_layout->addWidget(createLabel("Map Edition"));
+    generation_layout->addWidget(random_map);
+    generation_layout->addLayout(map_edition_layout);
     dens1->addWidget(Simulator::createLabel("Ratio Trees/Ground"));
     dens1->addWidget(density);
     dens2->addWidget(Simulator::createLabel("Ratio Trees/Grass"));
@@ -127,6 +155,9 @@ Simulator::Simulator(QWidget *parent)
     connect(start_simulation, SIGNAL(clicked()), this, SLOT(startSimulation()));
     connect(record, SIGNAL(stateChanged(int)), this, SLOT(record_box_change(int)));
     connect(abort_simulation, SIGNAL(clicked()), this, SLOT(abordButton()));
+    connect(restart_button, SIGNAL(clicked()), this, SLOT(restart()));
+    connect(save_file, SIGNAL(clicked()), this, SLOT(serializeData()));
+    connect(open_file, SIGNAL(clicked()), this, SLOT(readData()));
     statusBar()->showMessage("Ready");
     grab().save("test.png");
 }
@@ -185,12 +216,19 @@ void Simulator::readData() {
     canvas->repaint();
 }
 
+void Simulator::selectionEditionMapButton(int button) {
+    qDebug() << "CALLED EDITION MAPS";
+    for (int i = 0 ; i<map_edition_group->buttons().count() ; i++) {
+       map_edition_group->buttons()[i]->setText("     ");
+    }
+    map_edition_group->button(button)->setText("  X  ");
+    Simulator::currently_selected_state = button;
+}
 void Simulator::generateRandom() {
     statusBar()->showMessage("Generating map...");
     int dgb = density->value();
     int dhb = trees_density->value();
    // std::default_random_engine generator;
-    std::normal_distribution<double> distribution(Data::average_height_trees, Data::standard_deviation_trees_height);
 
     for (int i = 0 ; i<Data::grid_size ; i++) {
         for (int j=0; j<Data::grid_size ; j++) {
@@ -199,21 +237,12 @@ void Simulator::generateRandom() {
             if (random < dgb) {
                 random = QRandomGenerator::global()->bounded(0,100);
                 if (random < dhb) {
-                    Data::grid_state[i][j] = 2;
-                    double height = distribution(*QRandomGenerator::global());
-                    if (height < Data::min_height_trees) {
-                        Data::grid_tree_height[i][j] = Data::min_height_trees;
-                    } else if (height > Data::max_height_trees) {
-                        Data::grid_tree_height[i][j] = Data::max_height_trees;
-                    } else {
-                        Data::grid_tree_height[i][j] = height;
-                    }
+                    Data::setupTree(i, j); // Tree on the case
                 } else {
-                    Data::grid_state[i][j] = 1;
-                    Data::grid_tree_height[i][j] = 0.45;
+                    Data::setupGrass(i, j); // Grass on the case
                 }
             } else {
-                Data::grid_state[i][j] = 0;
+                Data::setupGround(i,j); // Nothing but environmental parameters being initialised
             }
         }
     }
@@ -230,6 +259,12 @@ void Simulator::abordButton() {
     cond.wait(&lock);
 }
 
+void Simulator::restart() {
+    if (QMessageBox::critical(this, "Restart", "Are you sure ? No data saved.", QMessageBox::Ok | QMessageBox::Discard) == QMessageBox::Ok) {
+        qApp->quit();
+        QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
+    }
+}
 void Simulator::calculusDone() {
     nbThreadDone += 1;
     qDebug() << "Calculus done";
@@ -303,6 +338,11 @@ void Simulator::startSimulation() {
         isStarted = true;
     }
     start_simulation->setDisabled(true);
+    open_file->setDisabled(true);
+    random_map->setDisabled(true);
+    for (int i = 0 ; i<map_edition_group->buttons().count() ; i++) {
+        map_edition_group->buttons()[i]->setDisabled(true);
+    }
 }
 
 void Simulator::record_box_change(int state) {

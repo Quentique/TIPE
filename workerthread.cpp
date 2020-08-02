@@ -74,7 +74,7 @@ void WorkerThread::requestRestart() {
 }
 double WorkerThread::test1(int i, int j) {
     // SET ON FIRE ACCORDING TO CURRENT STATE
-    if ((Data::grid_state[i][j] == Data::STATE_GRASS || Data::grid_state[i][j] == Data::STATE_TREES) && Data::voisinage(i, j, Data::STATE_ON_FIRE) > 1 && QRandomGenerator::global()->generateDouble() <= Data::probability) {
+    if ((Data::grid_state[i][j] == Data::STATE_GRASS || Data::grid_state[i][j] == Data::STATE_TREES) && Data::voisinage(i, j, Data::STATE_ON_FIRE) >= 1 && QRandomGenerator::global()->generateDouble() <= Data::probability) {
         return Data::STATE_ON_FIRE;
     } else if (Data::grid_state[i][j] == Data::STATE_ON_FIRE && Data::grid_to_burn[i][j] == 0){
         return Data::STATE_HOT_BURNT;

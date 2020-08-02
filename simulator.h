@@ -11,9 +11,11 @@
 #include <QLCDNumber>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QButtonGroup>
 #include <QReadWriteLock>
 #include <QWaitCondition>
 #include <QThread>
+#include <QVector>
 #include "canvas.h"
 #include "workerthread.h"
 
@@ -30,6 +32,8 @@ public:
     Simulator(QWidget *parent = nullptr);
     ~Simulator();
 
+    static int currently_selected_state;
+
 public slots:
     void generateRandom();
     void resetStatusBar();
@@ -41,12 +45,20 @@ public slots:
     void refreshDone();
     void abordButton();
 
+    void restart();
+
+    void serializeData();
+    void readData();
+
+    void selectionEditionMapButton(int button);
+
 private:
 
+    QButtonGroup *map_edition_group;
     QReadWriteLock lock;
     QWaitCondition cond;
     QWidget *window;
-    QPushButton *start_simulation, *abort_simulation, *random_map;
+    QPushButton *start_simulation, *abort_simulation, *random_map, *restart_button, *open_file, *save_file;
     QCheckBox *record, *save_to_csv;
     QSpinBox *density, *trees_density;
     QLabel *state_label;
@@ -54,19 +66,20 @@ private:
     Canvas *canvas;
     WorkerThread *thread1, *thread2;
     QLineEdit *simulation_name;
+    QVector<QPushButton*> buttons_edition_map;
 
     static void setRed(QLabel *pointer);
     static void setGreen(QLabel *pointer);
     static QLabel* createLabel(const QString &text);
 
-    void serializeData();
-    void readData();
+
 
     void saveScreenshot();
 
     int voisinage(int i, int j, int state);
 
     int calculusState, nbThreadDone;
+
 
     QString simulation_name_record;
 

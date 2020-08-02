@@ -53,7 +53,23 @@ void Canvas::updateGrid(QPainter *painter){
 void Canvas::mousePressEvent(QMouseEvent *event) {
     if (!Data::isStarted) {
         int pas = fixed_size/Data::grid_size;
-        Data::grid_state[event->x()/pas][event->y()/pas] = 3;
+        Data::grid_state[event->x()/pas][event->y()/pas] = Simulator::currently_selected_state;
+        switch (Simulator::currently_selected_state){
+
+            case Data::STATE_GROUND:
+                    Data::setupGround(event->x()/pas, event->y()/pas);
+                break;
+
+            case Data::STATE_GRASS:
+                    Data::setupGrass(event->x()/pas, event->y()/pas);
+                break;
+
+            case Data::STATE_TREES:
+                Data::setupTree(event->x()/pas, event->y()/pas);
+                break;
+
+        }
+
         repaint();
     }
 }

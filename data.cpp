@@ -1,8 +1,9 @@
 #include "data.h"
+#include <QRandomGenerator>
 
 // STATIC DATA INITIALIZATION :
-const QString Data::state_names[] = {QString("Ground"), QString("Grass"), QString("Tree"), QString("On Fire"), QString("Hot - Burnt"), QString("Burnt")};
-const QColor Data::state_colors[] = {QColor("tan"), QColor("chartreuse"), QColor("green"), QColor("red"), QColor("firebrick"), QColor("darkgrey")};
+const QString Data::state_names[] = {QString("Ground"), QString("Grass"), QString("Tree"), QString("On Fire"), QString("Hot - Burnt"), QString("Burnt"), QString("Water")};
+const QColor Data::state_colors[] = {QColor("tan"), QColor("chartreuse"), QColor("green"), QColor("red"), QColor("firebrick"), QColor("darkgrey"), QColor("blue")};
 int Data::grid_state[][Data::grid_size] = { {0} };
 
 double Data::grid_energy[][Data::grid_size] = {{0}};
@@ -20,6 +21,28 @@ const double Data::probability = 0.4;
 Data::Data()
 {
 
+}
+
+void Data::setupTree(int i, int j) {
+    Data::grid_state[i][j] = 2;
+    std::normal_distribution<double> distribution(Data::average_height_trees, Data::standard_deviation_trees_height);
+    double height = distribution(*QRandomGenerator::global());
+    if (height < Data::min_height_trees) {
+        Data::grid_tree_height[i][j] = Data::min_height_trees;
+    } else if (height > Data::max_height_trees) {
+        Data::grid_tree_height[i][j] = Data::max_height_trees;
+    } else {
+        Data::grid_tree_height[i][j] = height;
+    }
+}
+
+void Data::setupGrass(int i, int j) {
+    Data::grid_state[i][j] = Data::STATE_GRASS;
+    Data::grid_tree_height[i][j] = 0.45;
+}
+
+void Data::setupGround(int i, int j) {
+    Data::grid_state[i][j] = Data::STATE_GROUND;
 }
 
 int Data::voisinage(int i, int j, int state = 0) {

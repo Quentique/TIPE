@@ -18,6 +18,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     canvas.cpp \
     data.cpp \
+    flowlayout.cpp \
     main.cpp \
     simulator.cpp \
     workerthread.cpp
@@ -25,6 +26,7 @@ SOURCES += \
 HEADERS += \
     canvas.h \
     data.h \
+    flowlayout.h \
     simulator.h \
     workerthread.h
 
