@@ -19,6 +19,16 @@ public:
     static const int STATE_BURNT = 5;
     static const int STATE_WATER = 6;
 
+    static const int WIND_NW = 0;
+    static const int WIND_N = 1;
+    static const int WIND_NE = 2;
+    static const int WIND_W = 3;
+    static const int WIND_NO = 4;
+    static const int WIND_E = 5;
+    static const int WIND_SW = 6;
+    static const int WIND_S = 7;
+    static const int WIND_SE = 8;
+
     static const int nb_states = 7; // Number of available states
     static const int grid_size = 64; // Grid size (in units)
     static const int thread_nb = 2;
@@ -28,6 +38,7 @@ public:
     static int grid_to_burn[grid_size][grid_size];
     static double grid_moisture[grid_size][grid_size];
     static const QString state_names[nb_states]; // Names of states (on fire, burnt, etc.)
+    static const QString wind_directions[9], wind_directions_symbol[9];
     static const QColor state_colors[nb_states];
     static bool isStarted;
 
@@ -35,6 +46,9 @@ public:
     static const double min_height_trees, max_height_trees, average_height_trees, standard_deviation_trees_height;
     static const double probability; // for percolation simulation
     static constexpr double average_moisture = 0.42;
+    static constexpr double hot_burnt_temperature_limit = 273.15+200.0;
+    static constexpr double water_evaporation_temperature = 273.15+100.0;
+    static constexpr double pyrolisis_temperature = 273.15+0.0;  // to be completed
 
     // GENERATING FUNCTIONS
 
@@ -43,6 +57,8 @@ public:
     static void setupWater(int i, int j);
     static void setupGround(int i, int j);
     static void setupCase(int i, int j);
+    static void setupBurnt(int i, int j);
+    static void setupHotBurnt(int i, int j);
 
     static double generateHumidityLevel(int i, int j);
 

@@ -20,6 +20,7 @@
 #include <QProcess>
 
 int Simulator::currently_selected_state = 0;
+int Simulator::wind_direction = Data::WIND_NO;
 Simulator::Simulator(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -28,13 +29,14 @@ Simulator::Simulator(QWidget *parent)
     record_bool = false;
     calculusState = 0;
     nbThreadDone = 0;
-    QGridLayout *main_layout;
+    QGridLayout *main_layout, *wind_direction;
     QGroupBox *actions_layout;
-    QHBoxLayout *main_state_layout, *button_act_layout, *legend, *dens1, *dens2;
+    QHBoxLayout *main_state_layout, *button_act_layout, *legend, *dens1, *dens2, *wind_layout;
     FlowLayout *map_edition_layout;
     QVBoxLayout *state_layout, *generation_layout, *gen_actions_layout;
     window = new QWidget;
     main_layout = new QGridLayout;
+    wind_direction = new QGridLayout;
     actions_layout = new QGroupBox("Actions");
     generation_layout = new QVBoxLayout;
     state_layout = new QVBoxLayout;
@@ -45,6 +47,7 @@ Simulator::Simulator(QWidget *parent)
     dens1 = new QHBoxLayout;
     dens2 = new QHBoxLayout;
     map_edition_layout = new FlowLayout;
+    wind_layout = new QHBoxLayout;
 
 
     simulation_name = new QLineEdit;
@@ -59,6 +62,29 @@ Simulator::Simulator(QWidget *parent)
     record = new QCheckBox("Record");
     save_to_csv = new QCheckBox("Save data to CSV");
     state_label = new QLabel("Not running...");
+
+    wind_direction_group = new QButtonGroup;
+
+    for (int i = 0; i<9 ; i++) {
+        QPushButton *button = new QPushButton(Data::wind_directions_symbol[i]);
+        button->setToolTip(Data::wind_directions[i]);
+        button->setFlat(true);
+        button->setCheckable(true);
+        wind_direction_group->addButton(button, i);
+        wind_direction->addWidget(button, i/3, i%3);
+    }
+    wind_direction_group->buttons()[4]->setChecked(true);
+    wind_direction_group->setExclusive(true);
+
+    wind_strengh = new QSpinBox;
+    wind_strengh->setSuffix("m/s");
+    wind_strengh->setToolTip("Wind strengh");
+    wind_name = new QLabel("Wind");
+
+    wind_layout->addLayout(wind_direction);
+    wind_layout->addSpacing(2);
+    wind_layout->addWidget(wind_strengh);
+
     setRed(state_label);
     density = new QSpinBox;
     trees_density = new QSpinBox;
@@ -90,7 +116,6 @@ Simulator::Simulator(QWidget *parent)
        // buttons_edition_map.append(button);
     }
     map_edition_group->buttons().first()->setText("  X  ");
-    connect(map_edition_group, SIGNAL(buttonClicked(int)), this, SLOT(selectionEditionMapButton(int)));
     simulation_name_record = "";
 
 
@@ -118,6 +143,11 @@ Simulator::Simulator(QWidget *parent)
     dens2->addWidget(trees_density);
     generation_layout->addLayout(dens1);
     generation_layout->addLayout(dens2);
+
+    generation_layout->addWidget(line);
+    generation_layout->addWidget(createLabel("Wind"));
+    generation_layout->addLayout(wind_layout);
+
     generation_layout->addStretch(1);
 
     main_state_layout->addWidget(state_label);
@@ -158,8 +188,10 @@ Simulator::Simulator(QWidget *parent)
     connect(restart_button, SIGNAL(clicked()), this, SLOT(restart()));
     connect(save_file, SIGNAL(clicked()), this, SLOT(serializeData()));
     connect(open_file, SIGNAL(clicked()), this, SLOT(readData()));
+    connect(map_edition_group, SIGNAL(buttonClicked(int)), this, SLOT(selectionEditionMapButton(int)));
+    connect(wind_direction_group, SIGNAL(buttonClicked(int)), this, SLOT(selectionWindDirection(int)));
     statusBar()->showMessage("Ready");
-    grab().save("test.png");
+    //grab().save("test.png");
 }
 
 Simulator::~Simulator()
@@ -228,6 +260,10 @@ void Simulator::selectionEditionMapButton(int button) {
     map_edition_group->button(button)->setText("  X  ");
     Simulator::currently_selected_state = button;
 }
+
+void Simulator::selectionWindDirection(int button) {
+    Simulator::wind_direction = button;
+}
 void Simulator::generateRandom() {
     statusBar()->showMessage("Generating map...");
     int dgb = density->value();
@@ -238,7 +274,6 @@ void Simulator::generateRandom() {
         for (int j=0; j<Data::grid_size ; j++) {
             int random = QRandomGenerator::global()->bounded(0,100);
             random -= 7*voisinage(i,j, Data::STATE_GROUND);
-            Data::setupCase(i, j);
             if (random < dgb) {
                 random = QRandomGenerator::global()->bounded(0,100);
                 if (random < dhb) {

@@ -3,6 +3,8 @@
 
 // STATIC DATA INITIALIZATION :
 const QString Data::state_names[] = {QString("Ground"), QString("Grass"), QString("Tree"), QString("On Fire"), QString("Hot - Burnt"), QString("Burnt"), QString("Water")};
+const QString Data::wind_directions[] = { QString("NW"),  QString("N"),QString("NE"),  QString("W"),QString("No"),QString("E"), QString("SW"), QString("S"), QString("SE") };
+const QString Data::wind_directions_symbol[] = {   QString("↖"),QString("↑"),QString("↗"), QString("←"),QString("O"), QString("→"), QString("↙"), QString("↓"), QString("↘") };
 const QColor Data::state_colors[] = {QColor("tan"), QColor("chartreuse"), QColor("green"), QColor("red"), QColor("firebrick"), QColor("darkgrey"), QColor("blue")};
 int Data::grid_state[][Data::grid_size] = { {0} };
 
@@ -18,7 +20,7 @@ const double Data::max_height_trees = 5.0;
 const double Data::average_height_trees = (Data::min_height_trees+Data::max_height_trees)/2;
 const double Data::standard_deviation_trees_height = 0.8;
 
-const double Data::probability = 0.4;
+const double Data::probability = 0.2;
 Data::Data()
 {
 

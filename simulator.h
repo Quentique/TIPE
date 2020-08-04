@@ -32,7 +32,7 @@ public:
     Simulator(QWidget *parent = nullptr);
     ~Simulator();
 
-    static int currently_selected_state;
+    static int currently_selected_state, wind_direction;
 
 public slots:
     void generateRandom();
@@ -51,22 +51,23 @@ public slots:
     void readData();
 
     void selectionEditionMapButton(int button);
+    void selectionWindDirection(int button);
 
 private:
 
-    QButtonGroup *map_edition_group;
+    QButtonGroup *map_edition_group, *wind_direction_group;
     QReadWriteLock lock;
     QWaitCondition cond;
     QWidget *window;
     QPushButton *start_simulation, *abort_simulation, *random_map, *restart_button, *open_file, *save_file;
     QCheckBox *record, *save_to_csv;
-    QSpinBox *density, *trees_density;
-    QLabel *state_label;
+    QSpinBox *density, *trees_density, *wind_strengh;
+    QLabel *state_label, *wind_name;
     QLCDNumber *steps_number;
     Canvas *canvas;
     WorkerThread *thread1, *thread2;
     QLineEdit *simulation_name;
-    QVector<QPushButton*> buttons_edition_map;
+   // QVector<QPushButton*> buttons_edition_map;
 
     static void setRed(QLabel *pointer);
     static void setGreen(QLabel *pointer);

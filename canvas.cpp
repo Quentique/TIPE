@@ -68,6 +68,10 @@ void Canvas::mousePressEvent(QMouseEvent *event) {
                 Data::setupTree(event->x()/pas, event->y()/pas);
                 break;
 
+            case Data::STATE_WATER:
+                Data::setupWater(event->x()/pas, event->y()/pas);
+                break;
+
         }
 
         repaint();
