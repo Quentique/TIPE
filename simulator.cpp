@@ -21,6 +21,7 @@
 
 int Simulator::currently_selected_state = 0;
 int Simulator::wind_direction = Data::WIND_NO;
+int Simulator::wind_strengh_value = 0;
 Simulator::Simulator(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -361,6 +362,8 @@ void Simulator::updateMap() {
 void Simulator::startSimulation() {
     isRunning = true;
     simulation_name_record = simulation_name->text();
+    Simulator::wind_strengh_value = wind_strengh->value();
+    wind_strengh->setDisabled(true);
     state_label->setText("Running...");
     setGreen(state_label);
     simulation_name->setReadOnly(true);
@@ -382,6 +385,9 @@ void Simulator::startSimulation() {
     random_map->setDisabled(true);
     for (int i = 0 ; i<map_edition_group->buttons().count() ; i++) {
         map_edition_group->buttons()[i]->setDisabled(true);
+    }
+    for (int i = 0 ; i<wind_direction_group->buttons().count() ; i++) {
+        wind_direction_group->buttons()[i]->setDisabled(true);
     }
 }
 

@@ -32,7 +32,7 @@ public:
     Simulator(QWidget *parent = nullptr);
     ~Simulator();
 
-    static int currently_selected_state, wind_direction;
+    static int currently_selected_state, wind_direction, wind_strengh_value;
 
 public slots:
     void generateRandom();
