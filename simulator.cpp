@@ -19,6 +19,7 @@
 #include <QPainter>
 #include <QProcess>
 #include <QHash>
+#include <QFormLayout>
 
 int Simulator::currently_selected_state = 0;
 int Simulator::wind_direction = Data::WIND_NO;
@@ -36,7 +37,9 @@ Simulator::Simulator(QWidget *parent)
     QHBoxLayout *main_state_layout, *button_act_layout, *legend, *dens1, *dens2, *wind_layout;
     FlowLayout *map_edition_layout;
     QVBoxLayout *state_layout, *generation_layout, *gen_actions_layout;
+    QFormLayout *form_layout;
     window = new QWidget;
+    form_layout = new QFormLayout;
     main_layout = new QGridLayout;
     wind_direction = new QGridLayout;
     actions_layout = new QGroupBox("Actions");
@@ -65,6 +68,20 @@ Simulator::Simulator(QWidget *parent)
     save_to_csv = new QCheckBox("Save data to CSV");
     state_label = new QLabel("Not running...");
 
+    ambientHumidity = new QSpinBox;
+    ambientTemperature = new QSpinBox;
+    ambientHumidity->setSuffix(" %");
+    ambientHumidity->setMinimum(0);
+    ambientHumidity->setMaximum(100);
+    ambientHumidity->setValue(42);
+    ambientTemperature->setMinimum(0);
+    ambientTemperature->setSuffix(" K");
+    ambientTemperature->setMaximum(2000);
+    ambientTemperature->setValue(273+25);
+
+    form_layout->addRow("Temperature", ambientTemperature);
+    form_layout->addRow("Humidity", ambientHumidity);
+
     wind_direction_group = new QButtonGroup;
 
     for (int i = 0; i<9 ; i++) {
@@ -79,7 +96,7 @@ Simulator::Simulator(QWidget *parent)
     wind_direction_group->setExclusive(true);
 
     wind_strengh = new QSpinBox;
-    wind_strengh->setSuffix("m/s");
+    wind_strengh->setSuffix(" m/s");
     wind_strengh->setToolTip("Wind strengh");
     wind_name = new QLabel("Wind");
 
@@ -149,6 +166,7 @@ Simulator::Simulator(QWidget *parent)
     generation_layout->addWidget(line);
     generation_layout->addWidget(createLabel("Wind"));
     generation_layout->addLayout(wind_layout);
+    generation_layout->addLayout(form_layout);
 
     generation_layout->addStretch(1);
 
@@ -448,6 +466,8 @@ void Simulator::startSimulation() {
     isRunning = true;
     simulation_name_record = simulation_name->text();
     Simulator::wind_strengh_value = wind_strengh->value();
+    Simulator::ambientHumidityValue = ambientHumidity->value();
+    Simulator::ambientTemperatureValue = ambientTemperature->value();
     wind_strengh->setDisabled(true);
     state_label->setText("Running...");
     setGreen(state_label);
@@ -459,6 +479,9 @@ void Simulator::startSimulation() {
         for (int i = 0 ; i<Data::grid_size;i++) {
             for (int j = 0 ; j<Data::grid_size;j++) {
                 Data::grid_to_burn[i][j] = static_cast<int>(ceil(Data::grid_tree_height[i][j]));
+                if (Data::grid_case_temperature[i][j] < 0) {
+                    Data::grid_case_temperature[i][j] = Simulator::ambientTemperatureValue;
+                }
             }
         }
         thread1->start();

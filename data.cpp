@@ -7,10 +7,14 @@ const QString Data::wind_directions[] = { QString("NW"),  QString("N"),QString("
 const QString Data::wind_directions_symbol[] = {   QString("↖"),QString("↑"),QString("↗"), QString("←"),QString("O"), QString("→"), QString("↙"), QString("↓"), QString("↘") };
 const QColor Data::state_colors[] = {QColor("tan"), QColor("chartreuse"), QColor("green"), QColor("red"), QColor("firebrick"), QColor("darkgrey"), QColor("blue")};
 int Data::grid_state[][Data::grid_size] = { {0} };
+int Data::grid_case_temperature[][Data::grid_size] = { {-1 } };
+int Data::grid_flame_temperature[][Data::grid_size] = { {-1 } };
 
 double Data::grid_energy[][Data::grid_size] = {{0}};
 double Data::grid_tree_height[][Data::grid_size] = {{0}};
+double Data::grid_tree_width[][Data::grid_size] = {{0}};
 double Data::grid_moisture[][Data::grid_size] = {{0}};
+double Data::grid_flame_length[][Data::grid_size] = {{0}};
 bool Data::isStarted = false;
 
 QHash<int, float> Data::airCp = QHash<int, float>();
@@ -20,12 +24,16 @@ QHash<int, float> Data::airDynamicViscosity = QHash<int, float>();
 QHash<int, float> Data::airPrandtl = QHash<int, float>();
 int Data::grid_to_burn[][Data::grid_size] = { {0} }; // FOR PERCOLATION MODELING ONLY
 
-const double Data::min_height_trees = 2.0;
+const double Data::min_height_trees = 2.0; // meters
 const double Data::max_height_trees = 5.0;
+const double Data::min_width_trees = 1.0;
+const double Data::max_width_trees = 5.0;
 const double Data::average_height_trees = (Data::min_height_trees+Data::max_height_trees)/2;
+const double Data::average_width_trees = (Data::min_width_trees+Data::max_width_trees)/2;
 const double Data::standard_deviation_trees_height = 0.8;
+const double Data::standard_deviation_trees_width = 1.0;
 
-const double Data::probability = 0.2;
+const double Data::probability = 0.2; // PERCOLATION MODELING
 Data::Data()
 {
 
@@ -45,6 +53,9 @@ void Data::setupTree(int i, int j) {
     } else {
         Data::grid_tree_height[i][j] = height;
     }
+
+    std::normal_distribution<double> distribution2(Data::average_width_trees, Data::standard_deviation_trees_width);
+
 }
 
 void Data::setupGrass(int i, int j) {
@@ -103,4 +114,8 @@ double Data::generateHumidityLevel(int i, int j){
         }
 
     }
+}
+
+double Data::distance(int i0, int j0, int i1, int j1) {
+    return hypot(abs(j1-j0), abs(i1-i0))*Data::spatialResolution;
 }

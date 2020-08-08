@@ -32,7 +32,7 @@ public:
     Simulator(QWidget *parent = nullptr);
     ~Simulator();
 
-    static int currently_selected_state, wind_direction, wind_strengh_value;
+    static int currently_selected_state, wind_direction, wind_strengh_value, ambientTemperatureValue, ambientHumidityValue;
 
 public slots:
     void generateRandom();
@@ -61,7 +61,7 @@ private:
     QWidget *window;
     QPushButton *start_simulation, *abort_simulation, *random_map, *restart_button, *open_file, *save_file;
     QCheckBox *record, *save_to_csv;
-    QSpinBox *density, *trees_density, *wind_strengh;
+    QSpinBox *density, *trees_density, *wind_strengh, *ambientHumidity, *ambientTemperature;
     QLabel *state_label, *wind_name;
     QLCDNumber *steps_number;
     Canvas *canvas;

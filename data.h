@@ -32,11 +32,16 @@ public:
 
     static const int nb_states = 7; // Number of available states
     static const int grid_size = 64; // Grid size (in units)
+    static const int spatialResolution = 30; // = side size of each case in meters
     static const int thread_nb = 2;
     static int grid_state[grid_size][grid_size];
     static double grid_energy[grid_size][grid_size];
     static double grid_tree_height[grid_size][grid_size];
+    static double grid_tree_width[grid_size][grid_size];
     static int grid_to_burn[grid_size][grid_size];
+    static int grid_flame_temperature[grid_size][grid_size];
+    static int grid_case_temperature[grid_size][grid_size];
+    static double grid_flame_length[grid_size][grid_size];
     static double grid_moisture[grid_size][grid_size];
     static const QString state_names[nb_states]; // Names of states (on fire, burnt, etc.)
     static const QString wind_directions[9], wind_directions_symbol[9];
@@ -44,7 +49,7 @@ public:
     static bool isStarted;
 
     // DATA FOR THE SIMULATION  (S.I.I UNITS)
-    static const double min_height_trees, max_height_trees, average_height_trees, standard_deviation_trees_height;
+    static const double min_height_trees, max_height_trees, average_height_trees, standard_deviation_trees_height, average_width_trees, standard_deviation_trees_width, min_width_trees, max_width_trees;
     static const double probability; // for percolation simulation
     static constexpr double average_moisture = 0.42;
     static constexpr double hot_burnt_temperature_limit = 273.15+200.0;
@@ -53,6 +58,9 @@ public:
 
     static QHash<int, float> airCp, airCv, airThermalConductivity, airDynamicViscosity, airPrandtl;
 
+    // CALCULUS FUNCTIONS
+
+    static double distance(int i0, int j0, int i1, int j1);
     // GENERATING FUNCTIONS
 
     static void setupGrass(int i, int j);
