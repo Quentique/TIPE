@@ -18,6 +18,7 @@
 #include <QPoint>
 #include <QPainter>
 #include <QProcess>
+#include <QHash>
 
 int Simulator::currently_selected_state = 0;
 int Simulator::wind_direction = Data::WIND_NO;
@@ -191,7 +192,88 @@ Simulator::Simulator(QWidget *parent)
     connect(open_file, SIGNAL(clicked()), this, SLOT(readData()));
     connect(map_edition_group, SIGNAL(buttonClicked(int)), this, SLOT(selectionEditionMapButton(int)));
     connect(wind_direction_group, SIGNAL(buttonClicked(int)), this, SLOT(selectionWindDirection(int)));
-    statusBar()->showMessage("Ready");
+    statusBar()->showMessage("Loading data...");
+
+
+    // READING SPECIFIC HEAT CP FROM FILE
+    QFile f("cp.txt");
+    QHash<int, float> cp;
+    if (!f.open(QFile::ReadOnly)) {
+        qDebug() << f.errorString();
+        QMessageBox::critical(this, "Error", "Can't parse data. Exiting....");
+        exit(1);
+    } else {
+        while (!f.atEnd()) {
+            QByteArray line = f.readLine();
+            QList<QByteArray> list = line.split(',');
+            cp[list.value(0).toInt()] = list.value(1).toFloat();
+        }
+    }
+    f.close();
+    Data::airCp = cp;
+
+    // READING SPECIFIC HEAT CV FROM FILE
+    QFile ff("cv.txt");
+    QHash<int, float> cv;
+    if (!ff.open(QFile::ReadOnly)) {
+        qDebug() << ff.errorString();
+        QMessageBox::critical(this, "Error", "Can't parse data. Exiting....");
+        exit(1);
+    } else {
+        while (!ff.atEnd()) {
+            QByteArray line = ff.readLine();
+            QList<QByteArray> list = line.split(',');
+            cv[list.value(0).toInt()] = list.value(1).toFloat();
+        }
+    }
+    ff.close();
+    Data::airCv = cv;
+
+    // READING DYNAMIC VISCOSITY FROM FILE
+    QFile fff("dynamic_viscosity.txt");
+    QHash<int, float> vs;
+    if (!fff.open(QFile::ReadOnly)) {
+        qDebug() << fff.errorString();
+        QMessageBox::critical(this, "Error", "Can't parse data. Exiting....");
+        exit(1);
+    } else {
+        while (!fff.atEnd()) {
+            QByteArray line = fff.readLine();
+            QList<QByteArray> list = line.split(',');
+            vs[list.value(0).toInt()] = list.value(1).toFloat();
+        }
+    }
+    fff.close();
+    Data::airDynamicViscosity = vs;
+
+    // READING THERMAL CONDUCTIVITY FROM FILE
+    QFile ffff("thermal_conductivity.txt");
+    QHash<int, float> tc;
+    if (!ffff.open(QFile::ReadOnly)) {
+        qDebug() << ffff.errorString();
+        QMessageBox::critical(this, "Error", "Can't parse data. Exiting....");
+        exit(1);
+    } else {
+        while (!ffff.atEnd()) {
+            QByteArray line = ffff.readLine();
+            QList<QByteArray> list = line.split(',');
+            tc[list.value(0).toInt()] = list.value(1).toFloat();
+        }
+    }
+    ffff.close();
+    Data::airThermalConductivity = tc;
+    statusBar()->showMessage("Computing data...");
+    // COMPUTING PRANDTL NUMBER
+    QHash<int, float> prandtl;
+    for (int i = 273 ; i< 2000;i++) {
+        prandtl[i] = cp[i]*vs[i]/tc[i];
+    }
+    Data::airPrandtl = prandtl;
+    qDebug() << Data::airThermalConductivity[1400];
+    qDebug() << Data::airCp[1400];
+    qDebug() << Data::airDynamicViscosity[1400];
+    qDebug() << Data::airPrandtl[1400];
+    statusBar()->showMessage("Ready.");
     //grab().save("test.png");
 }
 
@@ -235,7 +317,10 @@ void Simulator::serializeData() {
     file.write(QJsonDocument(data).toJson());
     resetStatusBar();
 
+
 }
+
+
 
 void Simulator::readData() {
     QString filename = QFileDialog::getOpenFileName(this, "Open data save");
@@ -301,7 +386,7 @@ void Simulator::abordButton() {
 }
 
 void Simulator::restart() {
-    if (QMessageBox::critical(this, "Restart", "Are you sure ? No data saved.", QMessageBox::Ok | QMessageBox::Discard) == QMessageBox::Ok) {
+    if (QMessageBox::critical(this, "Restart", "Are you sure ? No data was saved.", QMessageBox::Ok | QMessageBox::Discard) == QMessageBox::Ok) {
         qApp->quit();
         QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
     }

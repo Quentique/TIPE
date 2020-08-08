@@ -3,6 +3,7 @@
 
 #include <QString>
 #include <QColor>
+#include <QHash>
 
 class Data
 {
@@ -49,6 +50,8 @@ public:
     static constexpr double hot_burnt_temperature_limit = 273.15+200.0;
     static constexpr double water_evaporation_temperature = 273.15+100.0;
     static constexpr double pyrolisis_temperature = 273.15+0.0;  // to be completed
+
+    static QHash<int, float> airCp, airCv, airThermalConductivity, airDynamicViscosity, airPrandtl;
 
     // GENERATING FUNCTIONS
 

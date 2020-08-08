@@ -13,6 +13,11 @@ double Data::grid_tree_height[][Data::grid_size] = {{0}};
 double Data::grid_moisture[][Data::grid_size] = {{0}};
 bool Data::isStarted = false;
 
+QHash<int, float> Data::airCp = QHash<int, float>();
+QHash<int, float> Data::airCv = QHash<int, float>();
+QHash<int, float> Data::airThermalConductivity = QHash<int, float>();
+QHash<int, float> Data::airDynamicViscosity = QHash<int, float>();
+QHash<int, float> Data::airPrandtl = QHash<int, float>();
 int Data::grid_to_burn[][Data::grid_size] = { {0} }; // FOR PERCOLATION MODELING ONLY
 
 const double Data::min_height_trees = 2.0;

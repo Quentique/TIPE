@@ -1,0 +1,4 @@
+CP CV : J/kg/K
+
+Vis : Pa.s
+Thermal Conductivity : W/m/K

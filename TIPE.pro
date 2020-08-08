@@ -37,3 +37,9 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+DISTFILES += \
+    cp.txt \
+    cv.txt \
+    dynamic_viscosity.txt \
+    thermal_conductivity.txt
