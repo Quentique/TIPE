@@ -39,6 +39,23 @@ void WorkerThread::run() {
                 }
             }
             break;
+        case 2:
+            for (int k = 0; k<Data::grid_size; k++) {
+                for (int l = 0; l<Data::grid_size; l++) { // CASE EN FEU
+                    for (int i =0 ;i<Data::grid_size; i++) { // CASE RECEVANT L'ENERGIE
+                        for (int j = 0 ;j<Data::grid_size ; j++ ) {
+                            grid_energy[i][j] += ember_radiation(k, l, i,j);
+                        }
+                    }
+                }
+            }
+            break;
+        case 3:
+            for (int i =0 ;i<Data::grid_size; i++) {
+                for (int j = 0 ;j<Data::grid_size ; j++ ) {
+                    grid_energy[i][j] += radiation_loss(i,j);
+                }
+            }
         }
         emit(calculusEnded());
         cond->wait(lock);

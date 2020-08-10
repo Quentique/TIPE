@@ -415,6 +415,38 @@ void Simulator::calculusDone() {
     if (nbThreadDone >= Data::thread_nb) {
         qDebug() << "Defreezing called";
         nbThreadDone = 0;
+        for (int i = 0 ; i<Data::grid_size; i++) {
+            for (int j = 0 ; j <Data::grid_size; j++) {
+                if (Data::grid_state[i][j] == Data::STATE_GROUND) {
+
+                    Data::grid_case_temperature[i][j] = Data::ambientTemperature(i,j);
+
+                } else if (Data::grid_state[i][j] == Data::STATE_TREES || Data::grid_state[i][j] == Data::STATE_GRASS) {
+                    if (Data::grid_case_temperature[i][j] < Data::water_evaporation_temperature) { // DESSICATION DU VEGETAL : augmentation de la température
+
+                        double FMC = Data::grid_water_mass[i][j]/Data::grid_mass_to_burn[i][j];
+                        double cp_DFF = 1110+3.7*Data::grid_case_temperature[i][j];
+                        double cp_WFF = 1/(1+FMC)*cp_DFF+ FMC/(1+FMC)*Data::cp_water;
+                        double rho_WFF = (Data::volumic_mass_DFF*(cp_DFF + FMC*Data::cp_water));
+                        Data::grid_case_temperature[i][j] += Data::grid_energy[i][j]/(Data::grid_alpha[i][j]*cp_WFF*rho_WFF)*Data::dt;
+
+                    } else if (Data::grid_water_mass[i][j] > 0) { // évaporation de l'eau contenu dans le végétal
+
+                        Data::grid_case_temperature[i][j] = Data::water_evaporation_temperature;
+                        Data::grid_water_mass[i][j] -= Data::grid_tree_height[i][j]*Data::dt*Data::grid_energy[i][j]/(Data::water_latente_heat);
+
+                    } else if (Data::grid_case_temperature[i][j] < Data::pyrolisis_temperature) { //échauffement jusqu'à atteindre la température nécessaire
+
+                        double cp_DFF = 1110+3.7*Data::grid_case_temperature[i][j];
+                        Data::grid_case_temperature[i][j] += Data::dt*Data::grid_energy[i][j]/(Data::grid_alpha[i][j]*Data::volumic_mass_DFF*cp_DFF);
+                    } else { // Toutes les conditions sont réunies : mise à feu
+                        Data::grid_state[i][j] = Data::STATE_ON_FIRE;
+                    }
+                } else if (Data::grid_state[i][j] == Data::STATE_ON_FIRE) {
+
+                }
+            }
+        }
         cond.wakeAll();
     }
 }
@@ -481,7 +513,7 @@ void Simulator::startSimulation() {
                     Data::grid_case_temperature[i][j] = Data::ambientTemperatureValue;
                 }
                 if (Data::grid_state[i][j] == Data::STATE_TREES || Data::grid_state[i][j] == Data::STATE_GRASS) {
-                    Data::grid_mass_to_burn[i][j] = Data::surface_mass_DFF; // in fact kg/m² at first
+                    Data::grid_mass_to_burn[i][j] = Data::volumic_mass_DFF*3.14159*pow(Data::grid_tree_width[i][j]/2,2)*Data::grid_tree_height[i][j];
                     Data::grid_alpha[i][j] = Data::surface_mass_DFF/(Data::grid_tree_height[i][j]*Data::volumic_mass_DFF);
                     Data::grid_delta[i][j] = 4/(Data::grid_alpha[i][j]*Data::sigma);
                     Data::grid_delta_eff[i][j] = std::min(Data::grid_tree_height[i][j], Data::grid_delta[i][j]);
