@@ -21,9 +21,7 @@
 #include <QHash>
 #include <QFormLayout>
 
-int Simulator::currently_selected_state = 0;
-int Simulator::wind_direction = Data::WIND_NO;
-int Simulator::wind_strengh_value = 0;
+
 Simulator::Simulator(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -362,11 +360,11 @@ void Simulator::selectionEditionMapButton(int button) {
        map_edition_group->buttons()[i]->setText("     ");
     }
     map_edition_group->button(button)->setText("  X  ");
-    Simulator::currently_selected_state = button;
+    Data::currently_selected_state = button;
 }
 
 void Simulator::selectionWindDirection(int button) {
-    Simulator::wind_direction = button;
+    Data::wind_direction = button;
 }
 void Simulator::generateRandom() {
     statusBar()->showMessage("Generating map...");
@@ -465,9 +463,9 @@ void Simulator::updateMap() {
 void Simulator::startSimulation() {
     isRunning = true;
     simulation_name_record = simulation_name->text();
-    Simulator::wind_strengh_value = wind_strengh->value();
-    Simulator::ambientHumidityValue = ambientHumidity->value();
-    Simulator::ambientTemperatureValue = ambientTemperature->value();
+    Data::wind_strengh_value = wind_strengh->value();
+    Data::ambientHumidityValue = ambientHumidity->value();
+    Data::ambientTemperatureValue = ambientTemperature->value();
     wind_strengh->setDisabled(true);
     state_label->setText("Running...");
     setGreen(state_label);
@@ -480,7 +478,13 @@ void Simulator::startSimulation() {
             for (int j = 0 ; j<Data::grid_size;j++) {
                 Data::grid_to_burn[i][j] = static_cast<int>(ceil(Data::grid_tree_height[i][j]));
                 if (Data::grid_case_temperature[i][j] < 0) {
-                    Data::grid_case_temperature[i][j] = Simulator::ambientTemperatureValue;
+                    Data::grid_case_temperature[i][j] = Data::ambientTemperatureValue;
+                }
+                if (Data::grid_state[i][j] == Data::STATE_TREES || Data::grid_state[i][j] == Data::STATE_GRASS) {
+                    Data::grid_mass_to_burn[i][j] = Data::surface_mass_DFF; // in fact kg/m² at first
+                    Data::grid_alpha[i][j] = Data::surface_mass_DFF/(Data::grid_tree_height[i][j]*Data::volumic_mass_DFF);
+                    Data::grid_delta[i][j] = 4/(Data::grid_alpha[i][j]*Data::sigma);
+                    Data::grid_delta_eff[i][j] = std::min(Data::grid_tree_height[i][j], Data::grid_delta[i][j]);
                 }
             }
         }

@@ -10,11 +10,18 @@ int Data::grid_state[][Data::grid_size] = { {0} };
 int Data::grid_case_temperature[][Data::grid_size] = { {-1 } };
 int Data::grid_flame_temperature[][Data::grid_size] = { {-1 } };
 
+int Data::currently_selected_state = 0;
+int Data::wind_direction = Data::WIND_NO;
+int Data::wind_strengh_value = 0;
+
 double Data::grid_energy[][Data::grid_size] = {{0}};
 double Data::grid_tree_height[][Data::grid_size] = {{0}};
 double Data::grid_tree_width[][Data::grid_size] = {{0}};
 double Data::grid_moisture[][Data::grid_size] = {{0}};
 double Data::grid_flame_length[][Data::grid_size] = {{0}};
+double Data::grid_delta[][Data::grid_size] = {{0}};
+double Data::grid_delta_eff[][Data::grid_size] = {{0}};
+double Data::grid_alpha[][Data::grid_size] = {{0}};
 bool Data::isStarted = false;
 
 QHash<int, float> Data::airCp = QHash<int, float>();
@@ -24,7 +31,7 @@ QHash<int, float> Data::airDynamicViscosity = QHash<int, float>();
 QHash<int, float> Data::airPrandtl = QHash<int, float>();
 int Data::grid_to_burn[][Data::grid_size] = { {0} }; // FOR PERCOLATION MODELING ONLY
 
-const double Data::min_height_trees = 2.0; // meters
+const double Data::min_height_trees = 2.0; // in meters
 const double Data::max_height_trees = 5.0;
 const double Data::min_width_trees = 1.0;
 const double Data::max_width_trees = 5.0;
@@ -118,4 +125,8 @@ double Data::generateHumidityLevel(int i, int j){
 
 double Data::distance(int i0, int j0, int i1, int j1) {
     return hypot(abs(j1-j0), abs(i1-i0))*Data::spatialResolution;
+}
+
+double Data::ambientTemperature(int i, int j) {
+    return Data::ambientTemperatureValue;
 }

@@ -12,8 +12,10 @@ class WorkerThread : public QThread
 public:
     WorkerThread(QObject *parent = nullptr, QReadWriteLock *locker = nullptr, QWaitCondition *condition = nullptr, int station = 0);
     void run() override;
-    double test1(int i, int j);
-    double test2(int i, int j);
+    double convection(int k, int l, int i, int j);
+    double internal_convection(int k, int l, int i, int j);
+    double ember_radiation(int k, int l, int i, int j);
+    double radiation_loss(int k, int l);
     void requestStop();
     void requestRestart();
 signals:

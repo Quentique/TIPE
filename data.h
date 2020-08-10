@@ -38,6 +38,11 @@ public:
     static double grid_energy[grid_size][grid_size];
     static double grid_tree_height[grid_size][grid_size];
     static double grid_tree_width[grid_size][grid_size];
+    static double grid_mass_to_burn[grid_size][grid_size];
+    static double grid_water_mass[grid_size][grid_size];
+    static double grid_delta_eff[grid_size][grid_size];
+    static double grid_delta[grid_size][grid_size];
+    static double grid_alpha[grid_size][grid_size];
     static int grid_to_burn[grid_size][grid_size];
     static int grid_flame_temperature[grid_size][grid_size];
     static int grid_case_temperature[grid_size][grid_size];
@@ -55,12 +60,28 @@ public:
     static constexpr double hot_burnt_temperature_limit = 273.15+200.0;
     static constexpr double water_evaporation_temperature = 273.15+100.0;
     static constexpr double pyrolisis_temperature = 273.15+0.0;  // to be completed
+    static constexpr double ignition_temperature = 561.0;
+
+    static constexpr double volumic_mass_DFF = 512.0; //kg/m^3
+    static constexpr double surface_mass_DFF = 0.313; // kg/m^2
+    static constexpr double surface_mass_water = 0.0182; //kg/m^2
+    static constexpr double emissivity = 0.9;
+    static constexpr double combustion_enthalpy = 14.454; // MJ/kg
+    static constexpr double absorptivity = 0.8; // a
+    static constexpr double sigma = 12240.0; // 1/m (rapport surface volume des aiguilles)
+    static constexpr double part_of_lost_heat = 0.35;
+    static constexpr double diameter_branch = 0.00252; // m
+
+    static constexpr double CONSTANT_Stephane_Boltzmann = 5.670374e-8;
 
     static QHash<int, float> airCp, airCv, airThermalConductivity, airDynamicViscosity, airPrandtl;
+
+    static int currently_selected_state, wind_direction, wind_strengh_value, ambientTemperatureValue, ambientHumidityValue;
 
     // CALCULUS FUNCTIONS
 
     static double distance(int i0, int j0, int i1, int j1);
+    static double ambientTemperature(int i, int j);
     // GENERATING FUNCTIONS
 
     static void setupGrass(int i, int j);
