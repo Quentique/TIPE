@@ -7,12 +7,15 @@ const QString Data::wind_directions[] = { QString("NW"),  QString("N"),QString("
 const QString Data::wind_directions_symbol[] = {   QString("↖"),QString("↑"),QString("↗"), QString("←"),QString("O"), QString("→"), QString("↙"), QString("↓"), QString("↘") };
 const QColor Data::state_colors[] = {QColor("tan"), QColor("chartreuse"), QColor("green"), QColor("red"), QColor("firebrick"), QColor("darkgrey"), QColor("blue")};
 int Data::grid_state[][Data::grid_size] = { {0} };
-int Data::grid_case_temperature[][Data::grid_size] = { {-1 } };
-int Data::grid_flame_temperature[][Data::grid_size] = { {-1 } };
+double Data::grid_case_temperature[][Data::grid_size] = { {-1.0 } };
+double Data::grid_flame_temperature[][Data::grid_size] = { {-1.0 } };
 
 int Data::currently_selected_state = 0;
 int Data::wind_direction = Data::WIND_NO;
 int Data::wind_strengh_value = 0;
+
+int Data::ambientTemperatureValue = 0;
+int Data::ambientHumidityValue = 0;
 
 double Data::grid_energy[][Data::grid_size] = {{0}};
 double Data::grid_tree_height[][Data::grid_size] = {{0}};
@@ -22,6 +25,8 @@ double Data::grid_flame_length[][Data::grid_size] = {{0}};
 double Data::grid_delta[][Data::grid_size] = {{0}};
 double Data::grid_delta_eff[][Data::grid_size] = {{0}};
 double Data::grid_alpha[][Data::grid_size] = {{0}};
+double Data::grid_mass_to_burn[][Data::grid_size]= {{0}};
+double Data::grid_water_mass[][Data::grid_size] = {{0}};
 bool Data::isStarted = false;
 
 QHash<int, float> Data::airCp = QHash<int, float>();
@@ -62,12 +67,20 @@ void Data::setupTree(int i, int j) {
     }
 
     std::normal_distribution<double> distribution2(Data::average_width_trees, Data::standard_deviation_trees_width);
-
+    double width = distribution2(*QRandomGenerator::global());
+    if (width < Data::min_width_trees) {
+        Data::grid_tree_width[i][j] = Data::min_width_trees;
+    } else if (height > Data::max_height_trees) {
+        Data::grid_tree_width[i][j] = Data::max_width_trees;
+    } else {
+        Data::grid_tree_width[i][j] = width;
+    }
 }
 
 void Data::setupGrass(int i, int j) {
     Data::grid_state[i][j] = Data::STATE_GRASS;
     Data::grid_tree_height[i][j] = 0.45;
+    Data::grid_tree_width[i][j] = Data::spatialResolution;
 }
 
 void Data::setupGround(int i, int j) {
@@ -77,6 +90,13 @@ void Data::setupGround(int i, int j) {
 void Data::setupWater(int i, int j){
     Data::grid_state[i][j] = Data::STATE_WATER;
     Data::grid_moisture[i][j] = 1.0;
+}
+
+void Data::setupFire(int i, int j) {
+    Data::grid_flame_temperature[i][j] = 600;
+    Data::grid_case_temperature[i][j] = 600;
+    Data::grid_flame_length[i][j] = 1.0;
+    Data::grid_mass_to_burn[i][j] = 50.0;
 }
 
 int Data::voisinage(int i, int j, int state = 0) {
@@ -128,5 +148,39 @@ double Data::distance(int i0, int j0, int i1, int j1) {
 }
 
 double Data::ambientTemperature(int i, int j) {
-    return Data::ambientTemperatureValue;
+    int nb_states = 0;
+    double temp = 0;
+    if (i > 0) {
+        temp += Data::grid_case_temperature[i-1][j];
+        nb_states +=1;
+        if (j> 0) {
+            temp += Data::grid_case_temperature[i-1][j-1];
+            nb_states +=1;
+        }
+        if (j < Data::grid_size-1) {
+            temp += Data::grid_case_temperature[i-1][j+1];
+            nb_states++;
+        }
+    }
+    if (j > 0) {
+        temp += Data::grid_case_temperature[i][j-1];
+        nb_states++;
+    }
+    if (i < Data::grid_size-1) {
+        temp += Data::grid_case_temperature[i+1][j];
+        nb_states++;
+        if (j > 0) {
+            temp += Data::grid_case_temperature[i+1][j-1];
+            nb_states++;
+        }
+        if (j< Data::grid_size-1) {
+            temp += Data::grid_case_temperature[i+1][j+1];
+            nb_states++;
+        }
+    }
+    if (j < Data::grid_size-1) {
+        temp += Data::grid_case_temperature[i][j+1];
+        nb_states++;
+    }
+    return temp/nb_states;
 }

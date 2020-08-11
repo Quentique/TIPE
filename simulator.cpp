@@ -190,11 +190,17 @@ Simulator::Simulator(QWidget *parent)
     // CALCULUS ENGINE INITIALIZATION :
     thread1 = new WorkerThread(this, &lock, &cond, 0);
     thread2 = new WorkerThread(this, &lock, &cond, 1);
+    thread3 = new WorkerThread(this, &lock, &cond, 2);
+    thread4 = new WorkerThread(this, &lock, &cond, 3);
 
     connect(thread1, SIGNAL(calculusEnded()), this, SLOT(calculusDone()));
     connect(thread2, SIGNAL(calculusEnded()), this, SLOT(calculusDone()));
+    connect(thread3, SIGNAL(calculusEnded()), this, SLOT(calculusDone()));
+    connect(thread4, SIGNAL(calculusEnded()), this, SLOT(calculusDone()));
     connect(thread1, SIGNAL(done()), this, SLOT(updateMap()));
     connect(thread2, SIGNAL(done()), this, SLOT(updateMap()));
+    connect(thread3, SIGNAL(done()), this, SLOT(updateMap()));
+    connect(thread4, SIGNAL(done()), this, SLOT(updateMap()));
 
     // DATA INITIALIZATION :
     connect(random_map, SIGNAL(clicked()), this, SLOT(generateRandom()));
@@ -297,6 +303,8 @@ Simulator::~Simulator()
 {
     thread1->terminate();
     thread2->terminate();
+    thread3->terminate();
+    thread4->terminate();
 }
 
 QLabel *Simulator::createLabel(const QString &text)
@@ -415,38 +423,7 @@ void Simulator::calculusDone() {
     if (nbThreadDone >= Data::thread_nb) {
         qDebug() << "Defreezing called";
         nbThreadDone = 0;
-        for (int i = 0 ; i<Data::grid_size; i++) {
-            for (int j = 0 ; j <Data::grid_size; j++) {
-                if (Data::grid_state[i][j] == Data::STATE_GROUND) {
 
-                    Data::grid_case_temperature[i][j] = Data::ambientTemperature(i,j);
-
-                } else if (Data::grid_state[i][j] == Data::STATE_TREES || Data::grid_state[i][j] == Data::STATE_GRASS) {
-                    if (Data::grid_case_temperature[i][j] < Data::water_evaporation_temperature) { // DESSICATION DU VEGETAL : augmentation de la température
-
-                        double FMC = Data::grid_water_mass[i][j]/Data::grid_mass_to_burn[i][j];
-                        double cp_DFF = 1110+3.7*Data::grid_case_temperature[i][j];
-                        double cp_WFF = 1/(1+FMC)*cp_DFF+ FMC/(1+FMC)*Data::cp_water;
-                        double rho_WFF = (Data::volumic_mass_DFF*(cp_DFF + FMC*Data::cp_water));
-                        Data::grid_case_temperature[i][j] += Data::grid_energy[i][j]/(Data::grid_alpha[i][j]*cp_WFF*rho_WFF)*Data::dt;
-
-                    } else if (Data::grid_water_mass[i][j] > 0) { // évaporation de l'eau contenu dans le végétal
-
-                        Data::grid_case_temperature[i][j] = Data::water_evaporation_temperature;
-                        Data::grid_water_mass[i][j] -= Data::grid_tree_height[i][j]*Data::dt*Data::grid_energy[i][j]/(Data::water_latente_heat);
-
-                    } else if (Data::grid_case_temperature[i][j] < Data::pyrolisis_temperature) { //échauffement jusqu'à atteindre la température nécessaire
-
-                        double cp_DFF = 1110+3.7*Data::grid_case_temperature[i][j];
-                        Data::grid_case_temperature[i][j] += Data::dt*Data::grid_energy[i][j]/(Data::grid_alpha[i][j]*Data::volumic_mass_DFF*cp_DFF);
-                    } else { // Toutes les conditions sont réunies : mise à feu
-                        Data::grid_state[i][j] = Data::STATE_ON_FIRE;
-                    }
-                } else if (Data::grid_state[i][j] == Data::STATE_ON_FIRE) {
-
-                }
-            }
-        }
         cond.wakeAll();
     }
 }
@@ -467,6 +444,7 @@ void Simulator::updateMap() {
 
     nbThreadDone += 1;
     qDebug() << "Update called";
+    qDebug() << "Water evaporation temperature" << Data::water_evaporation_temperature;
     if (nbThreadDone >= Data::thread_nb) {
         nbThreadDone =0;
         /*for (int i = 0 ; i<Data::grid_size;i++) {
@@ -481,6 +459,59 @@ void Simulator::updateMap() {
                 }
             }
         }*/
+        qDebug() << Data::grid_energy[1][1];
+        for (int i = 0 ; i<Data::grid_size; i++) {
+            for (int j = 0 ; j <Data::grid_size; j++) {
+                // qDebug() << Data::grid_energy[i][j];
+                if (Data::grid_state[i][j] == Data::STATE_GROUND) {
+
+                    Data::grid_case_temperature[i][j] = Data::ambientTemperature(i,j);
+
+                } else if (Data::grid_state[i][j] == Data::STATE_TREES || Data::grid_state[i][j] == Data::STATE_GRASS) {
+                    if (Data::grid_case_temperature[i][j] < Data::water_evaporation_temperature) { // DESSICATION DU VEGETAL : augmentation de la température
+
+                        double FMC = Data::grid_water_mass[i][j]/Data::grid_mass_to_burn[i][j];
+                        double cp_DFF = 1110.0+3.7*Data::grid_case_temperature[i][j];
+                        double cp_WFF = 1/(1+FMC)*cp_DFF+ FMC/(1+FMC)*Data::cp_water;
+                        double rho_WFF = (Data::volumic_mass_DFF*(cp_DFF + FMC*Data::cp_water));
+                        Data::grid_case_temperature[i][j] += Data::grid_energy[i][j]/(Data::grid_alpha[i][j]*cp_WFF*rho_WFF)*Data::dt;
+
+                    } else if (Data::grid_water_mass[i][j] > 0) { // évaporation de l'eau contenu dans le végétal
+
+                        Data::grid_case_temperature[i][j] = Data::water_evaporation_temperature;
+                        Data::grid_water_mass[i][j] -= Data::grid_tree_height[i][j]*Data::dt*Data::grid_energy[i][j]/(Data::water_latente_heat);
+
+                    } else if (Data::grid_case_temperature[i][j] < Data::pyrolisis_temperature) { //échauffement jusqu'à atteindre la température nécessaire
+
+                        double cp_DFF = 1110+3.7*Data::grid_case_temperature[i][j];
+                        Data::grid_case_temperature[i][j] += Data::dt*Data::grid_energy[i][j]/(Data::grid_alpha[i][j]*Data::volumic_mass_DFF*cp_DFF);
+                    } else { // Toutes les conditions sont réunies : mise à feu
+                        Data::grid_state[i][j] = Data::STATE_ON_FIRE;
+                    }
+                } else if (Data::grid_state[i][j] == Data::STATE_ON_FIRE) { // calcul des paramètres de flamme et cinétique du carburant
+                    double k = Data::A*exp(-Data::Ea/(Data::CONSTANT_GAS*Data::grid_case_temperature[i][j])); // constante cinétique
+                    double new_mass = Data::grid_mass_to_burn[i][j]*exp(-k*Data::dt); // calcul de la nouvelle masse et du delta
+                    double Qheat = (Data::grid_mass_to_burn[i][j]-new_mass)*Data::combustion_enthalpy;
+                    Data::grid_flame_length[i][j] = 0.0148*pow(Qheat, 0.4)-1.02*Data::grid_tree_width[i][j];
+
+                    double flame_power = Data::part_of_lost_heat*Qheat/(3.14159*Data::grid_tree_width[i][j]*Data::grid_flame_length[i][j]);
+                    double flame_emissivity = 1-exp(-0.6*Data::grid_flame_length[i][j]);
+
+                    Data::grid_flame_temperature[i][j] = pow(flame_power/(flame_emissivity*Data::CONSTANT_Stephane_Boltzmann),1/4); // Calcul de la température de la flamme
+                    Data::grid_mass_to_burn[i][j] = new_mass;
+                    if (new_mass < 0.5) {
+                        Data::grid_state[i][j] = Data::STATE_HOT_BURNT;
+                        Data::grid_flame_length[i][j] = 0.0;
+                        Data::grid_flame_temperature[i][j] = 0.0;
+                    }
+                } else if (Data::grid_state[i][j] == Data::STATE_HOT_BURNT) {
+                    Data::grid_state[i][j] = Data::STATE_BURNT;
+                }
+
+                Data::grid_energy[i][j] = 0.0; //reset to 0
+            }
+        }
+        qDebug() << Data::grid_case_temperature[1][1];
 
         canvas->repaint();
         calculusState += 1;
@@ -498,6 +529,7 @@ void Simulator::startSimulation() {
     Data::wind_strengh_value = wind_strengh->value();
     Data::ambientHumidityValue = ambientHumidity->value();
     Data::ambientTemperatureValue = ambientTemperature->value();
+    qDebug() << "temp ambiante" << Data::ambientTemperatureValue;
     wind_strengh->setDisabled(true);
     state_label->setText("Running...");
     setGreen(state_label);
@@ -508,21 +540,33 @@ void Simulator::startSimulation() {
     } else {
         for (int i = 0 ; i<Data::grid_size;i++) {
             for (int j = 0 ; j<Data::grid_size;j++) {
-                Data::grid_to_burn[i][j] = static_cast<int>(ceil(Data::grid_tree_height[i][j]));
-                if (Data::grid_case_temperature[i][j] < 0) {
+                // Data::grid_to_burn[i][j] = static_cast<int>(ceil(Data::grid_tree_height[i][j]));
+                if (Data::grid_state[i][j] != Data::STATE_ON_FIRE) {
                     Data::grid_case_temperature[i][j] = Data::ambientTemperatureValue;
                 }
                 if (Data::grid_state[i][j] == Data::STATE_TREES || Data::grid_state[i][j] == Data::STATE_GRASS) {
-                    Data::grid_mass_to_burn[i][j] = Data::volumic_mass_DFF*3.14159*pow(Data::grid_tree_width[i][j]/2,2)*Data::grid_tree_height[i][j];
+                    Data::grid_mass_to_burn[i][j] = Data::surface_mass_DFF*3.14159*pow(Data::grid_tree_width[i][j]/2,2)*Data::grid_tree_height[i][j];
+                            //Data::volumic_mass_DFF*3.14159*pow(Data::grid_tree_width[i][j]/2,2)*Data::grid_tree_height[i][j];
                     Data::grid_alpha[i][j] = Data::surface_mass_DFF/(Data::grid_tree_height[i][j]*Data::volumic_mass_DFF);
                     Data::grid_delta[i][j] = 4/(Data::grid_alpha[i][j]*Data::sigma);
                     Data::grid_delta_eff[i][j] = std::min(Data::grid_tree_height[i][j], Data::grid_delta[i][j]);
+                    Data::grid_water_mass[i][j] = Data::surface_mass_water*3.14159*pow(Data::grid_tree_width[i][j]/2,2)*Data::grid_tree_height[i][j];
                 }
             }
         }
+        qDebug() << "Alpha" << Data::grid_alpha[1][1];
+        qDebug() << "Delta" << Data::grid_delta[1][1];
+        qDebug() << "Mass eau " << Data::grid_water_mass[1][1];
+        qDebug() << "Largeur" << Data::grid_tree_width[1][1];
+        qDebug() << Data::grid_tree_width[1][1];
+        qDebug() <<"a bruler" << Data::grid_mass_to_burn[1][1];
+        qDebug() << "température" << Data::grid_case_temperature[1][1];
         thread1->start();
         thread2->start();
+        thread3->start();
+        thread4->start();
         isStarted = true;
+
     }
     start_simulation->setDisabled(true);
     open_file->setDisabled(true);

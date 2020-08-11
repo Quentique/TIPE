@@ -32,7 +32,7 @@ public:
     Simulator(QWidget *parent = nullptr);
     ~Simulator();
 
-    static int currently_selected_state, wind_direction, wind_strengh_value, ambientTemperatureValue, ambientHumidityValue;
+
 
 public slots:
     void generateRandom();
@@ -65,7 +65,7 @@ private:
     QLabel *state_label, *wind_name;
     QLCDNumber *steps_number;
     Canvas *canvas;
-    WorkerThread *thread1, *thread2;
+    WorkerThread *thread1, *thread2, *thread3, *thread4;
     QLineEdit *simulation_name;
    // QVector<QPushButton*> buttons_edition_map;
 

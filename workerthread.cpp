@@ -1,6 +1,7 @@
 #include "workerthread.h"
 #include "Data.h"
 #include <QRandomGenerator>
+#include <QtDebug>
 WorkerThread::WorkerThread(QObject *parent, QReadWriteLock *locker, QWaitCondition *condition, int station) : QThread(parent)
 {
     lock = locker;
@@ -45,6 +46,7 @@ void WorkerThread::run() {
                     for (int i =0 ;i<Data::grid_size; i++) { // CASE RECEVANT L'ENERGIE
                         for (int j = 0 ;j<Data::grid_size ; j++ ) {
                             grid_energy[i][j] += ember_radiation(k, l, i,j);
+                           // qDebug() << ember_radiation(k,l,i,j);
                         }
                     }
                 }
@@ -61,12 +63,12 @@ void WorkerThread::run() {
         cond->wait(lock);
         lock->unlock();
         lock->lockForWrite();
-        switch (action) {
+       /* switch (action) {
             case 0:
             for (int i =0 ;i<Data::grid_size; i++) {
                 for (int j = 0 ;j<Data::grid_size ; j++ ) {
                     if (grid_state[i][j] != -1) {
-                        Data::grid_state[i][j] = grid_state[i][j];
+                        Data::grid_energy[i][j] += grid_energy[i][j];
                     }
                 }
             }
@@ -75,10 +77,17 @@ void WorkerThread::run() {
         case 1:
             for (int i =0 ;i<Data::grid_size; i++) {
                 for (int j = 0 ;j<Data::grid_size ; j++ ) {
-                    Data::grid_to_burn[i][j] += grid_to_burn[i][j];
+                    Data::grid_energy[i][j] += grid_energy[i][j];
                 }
             }
             break;
+        }*/
+        for (int i =0 ;i<Data::grid_size; i++) {
+            for (int j = 0 ;j<Data::grid_size ; j++ ) {
+                if (grid_state[i][j] != -1) {
+                    Data::grid_energy[i][j] += grid_energy[i][j];
+                }
+            }
         }
         emit(done());
         cond->wait(lock);

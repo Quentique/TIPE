@@ -32,9 +32,9 @@ public:
 
     static const int nb_states = 7; // Number of available states
     static const int grid_size = 64; // Grid size (in units)
-    static const int spatialResolution = 30; // = side size of each case in meters
+    static const int spatialResolution = 20; // = side size of each case in meters
     static const int dt = 30*60; // pas de calcul, en s
-    static const int thread_nb = 2;
+    static const int thread_nb = 4;
     static int grid_state[grid_size][grid_size];
     static double grid_energy[grid_size][grid_size]; // J
     static double grid_tree_height[grid_size][grid_size]; // m
@@ -45,8 +45,8 @@ public:
     static double grid_delta[grid_size][grid_size]; // wu
     static double grid_alpha[grid_size][grid_size]; // wu
     static int grid_to_burn[grid_size][grid_size]; // unused
-    static int grid_flame_temperature[grid_size][grid_size]; // K
-    static int grid_case_temperature[grid_size][grid_size]; // K
+    static double  grid_flame_temperature[grid_size][grid_size]; // K
+    static double grid_case_temperature[grid_size][grid_size]; // K
     static double grid_flame_length[grid_size][grid_size]; // m
     static double grid_moisture[grid_size][grid_size]; // %
     static const QString state_names[nb_states]; // Names of states (on fire, burnt, etc.)
@@ -67,15 +67,19 @@ public:
     static constexpr double surface_mass_DFF = 0.313; // kg/m^2
     static constexpr double surface_mass_water = 0.0182; //kg/m^2
     static constexpr double cp_water = 4180.0; // J/kg/K
-    static constexpr double water_latente_heat = 0.0;
+    static constexpr double water_latente_heat = 2260.0; // J/kg
     static constexpr double emissivity = 0.9;
-    static constexpr double combustion_enthalpy = 14.454; // MJ/kg
+    static constexpr double combustion_enthalpy = 14454000.0; // J/kg
     static constexpr double absorptivity = 0.8; // a
     static constexpr double sigma = 12240.0; // 1/m (rapport surface volume des aiguilles)
     static constexpr double part_of_lost_heat = 0.35;
     static constexpr double diameter_branch = 0.00252; // m
 
     static constexpr double CONSTANT_Stephane_Boltzmann = 5.670374e-8;
+    static constexpr double CONSTANT_GAS = 8.314462;
+
+    static constexpr double A = 646934.285; // s^-1
+    static constexpr double Ea = 182680.0; // kJ/mol
 
     static QHash<int, float> airCp, airCv, airThermalConductivity, airDynamicViscosity, airPrandtl;
 
@@ -94,6 +98,7 @@ public:
     static void setupCase(int i, int j);
     static void setupBurnt(int i, int j);
     static void setupHotBurnt(int i, int j);
+    static void setupFire(int i, int j);
 
     static double generateHumidityLevel(int i, int j);
 
