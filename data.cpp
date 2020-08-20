@@ -17,6 +17,9 @@ int Data::wind_strengh_value = 0;
 int Data::ambientTemperatureValue = 0;
 int Data::ambientHumidityValue = 0;
 
+double Data::lx = Data::spatialResolution*10;
+double Data::ly = Data::spatialResolution*10;
+
 double Data::grid_energy[][Data::grid_size] = {{0}};
 double Data::grid_tree_height[][Data::grid_size] = {{0}};
 double Data::grid_tree_width[][Data::grid_size] = {{0}};
@@ -29,11 +32,13 @@ double Data::grid_mass_to_burn[][Data::grid_size]= {{0}};
 double Data::grid_water_mass[][Data::grid_size] = {{0}};
 bool Data::isStarted = false;
 
-QHash<int, float> Data::airCp = QHash<int, float>();
-QHash<int, float> Data::airCv = QHash<int, float>();
-QHash<int, float> Data::airThermalConductivity = QHash<int, float>();
-QHash<int, float> Data::airDynamicViscosity = QHash<int, float>();
-QHash<int, float> Data::airPrandtl = QHash<int, float>();
+QHash<int, double> Data::airCp = QHash<int, double>();
+QHash<int, double> Data::airCv = QHash<int, double>();
+QHash<int, double> Data::airThermalConductivity = QHash<int, double>();
+QHash<int, double> Data::airDynamicViscosity = QHash<int, double>();
+QHash<int, double> Data::airPrandtl = QHash<int, double>();
+QHash<int, double> Data::airDensity = QHash<int, double>();
+QHash<int, double> Data::airKinematicViscosity = QHash<int, double>();
 int Data::grid_to_burn[][Data::grid_size] = { {0} }; // FOR PERCOLATION MODELING ONLY
 
 const double Data::min_height_trees = 2.0; // in meters
@@ -93,10 +98,10 @@ void Data::setupWater(int i, int j){
 }
 
 void Data::setupFire(int i, int j) {
-    Data::grid_flame_temperature[i][j] = 600;
-    Data::grid_case_temperature[i][j] = 600;
-    Data::grid_flame_length[i][j] = 1.0;
-    Data::grid_mass_to_burn[i][j] = 50.0;
+    Data::grid_flame_temperature[i][j] = 900;
+    Data::grid_case_temperature[i][j] = 900;
+    Data::grid_flame_length[i][j] = 3.0;
+    Data::grid_mass_to_burn[i][j] = 10.0;
 }
 
 int Data::voisinage(int i, int j, int state = 0) {

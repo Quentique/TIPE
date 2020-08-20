@@ -65,7 +65,7 @@ private:
     QLabel *state_label, *wind_name;
     QLCDNumber *steps_number;
     Canvas *canvas;
-    WorkerThread *thread1, *thread2, *thread3, *thread4;
+    WorkerThread *thread1, *thread2, *thread3, *thread4, *thread5;
     QLineEdit *simulation_name;
    // QVector<QPushButton*> buttons_edition_map;
 

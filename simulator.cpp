@@ -108,7 +108,7 @@ Simulator::Simulator(QWidget *parent)
     density->setRange(0,100);
     trees_density->setRange(0,100);
     steps_number = new QLCDNumber;
-    steps_number->setDigitCount(3);
+    steps_number->setDigitCount(4);
     steps_number->display(0);
 
     canvas = new Canvas;
@@ -192,15 +192,18 @@ Simulator::Simulator(QWidget *parent)
     thread2 = new WorkerThread(this, &lock, &cond, 1);
     thread3 = new WorkerThread(this, &lock, &cond, 2);
     thread4 = new WorkerThread(this, &lock, &cond, 3);
+    thread5 = new WorkerThread(this, &lock, &cond, 4);
 
     connect(thread1, SIGNAL(calculusEnded()), this, SLOT(calculusDone()));
     connect(thread2, SIGNAL(calculusEnded()), this, SLOT(calculusDone()));
     connect(thread3, SIGNAL(calculusEnded()), this, SLOT(calculusDone()));
     connect(thread4, SIGNAL(calculusEnded()), this, SLOT(calculusDone()));
+    connect(thread5, SIGNAL(calculusEnded()), this, SLOT(calculusDone()));
     connect(thread1, SIGNAL(done()), this, SLOT(updateMap()));
     connect(thread2, SIGNAL(done()), this, SLOT(updateMap()));
     connect(thread3, SIGNAL(done()), this, SLOT(updateMap()));
     connect(thread4, SIGNAL(done()), this, SLOT(updateMap()));
+    connect(thread5, SIGNAL(done()), this, SLOT(updateMap()));
 
     // DATA INITIALIZATION :
     connect(random_map, SIGNAL(clicked()), this, SLOT(generateRandom()));
@@ -219,7 +222,7 @@ Simulator::Simulator(QWidget *parent)
 
     // READING SPECIFIC HEAT CP FROM FILE
     QFile f("cp.txt");
-    QHash<int, float> cp;
+    QHash<int, double> cp;
     if (!f.open(QFile::ReadOnly)) {
         qDebug() << f.errorString();
         QMessageBox::critical(this, "Error", "Can't parse data. Exiting....");
@@ -228,7 +231,7 @@ Simulator::Simulator(QWidget *parent)
         while (!f.atEnd()) {
             QByteArray line = f.readLine();
             QList<QByteArray> list = line.split(',');
-            cp[list.value(0).toInt()] = list.value(1).toFloat();
+            cp[list.value(0).toInt()] = list.value(1).toDouble();
         }
     }
     f.close();
@@ -236,7 +239,7 @@ Simulator::Simulator(QWidget *parent)
 
     // READING SPECIFIC HEAT CV FROM FILE
     QFile ff("cv.txt");
-    QHash<int, float> cv;
+    QHash<int, double> cv;
     if (!ff.open(QFile::ReadOnly)) {
         qDebug() << ff.errorString();
         QMessageBox::critical(this, "Error", "Can't parse data. Exiting....");
@@ -245,7 +248,7 @@ Simulator::Simulator(QWidget *parent)
         while (!ff.atEnd()) {
             QByteArray line = ff.readLine();
             QList<QByteArray> list = line.split(',');
-            cv[list.value(0).toInt()] = list.value(1).toFloat();
+            cv[list.value(0).toInt()] = list.value(1).toDouble();
         }
     }
     ff.close();
@@ -253,7 +256,7 @@ Simulator::Simulator(QWidget *parent)
 
     // READING DYNAMIC VISCOSITY FROM FILE
     QFile fff("dynamic_viscosity.txt");
-    QHash<int, float> vs;
+    QHash<int, double> vs;
     if (!fff.open(QFile::ReadOnly)) {
         qDebug() << fff.errorString();
         QMessageBox::critical(this, "Error", "Can't parse data. Exiting....");
@@ -262,7 +265,7 @@ Simulator::Simulator(QWidget *parent)
         while (!fff.atEnd()) {
             QByteArray line = fff.readLine();
             QList<QByteArray> list = line.split(',');
-            vs[list.value(0).toInt()] = list.value(1).toFloat();
+            vs[list.value(0).toInt()] = list.value(1).toDouble();
         }
     }
     fff.close();
@@ -270,7 +273,7 @@ Simulator::Simulator(QWidget *parent)
 
     // READING THERMAL CONDUCTIVITY FROM FILE
     QFile ffff("thermal_conductivity.txt");
-    QHash<int, float> tc;
+    QHash<int, double> tc;
     if (!ffff.open(QFile::ReadOnly)) {
         qDebug() << ffff.errorString();
         QMessageBox::critical(this, "Error", "Can't parse data. Exiting....");
@@ -279,18 +282,45 @@ Simulator::Simulator(QWidget *parent)
         while (!ffff.atEnd()) {
             QByteArray line = ffff.readLine();
             QList<QByteArray> list = line.split(',');
-            tc[list.value(0).toInt()] = list.value(1).toFloat();
+            tc[list.value(0).toInt()] = list.value(1).toDouble();
         }
     }
     ffff.close();
     Data::airThermalConductivity = tc;
+
+    // READING DENSITY FROM FILE
+    QFile fffff("density.txt");
+    QHash<int, double> ad;
+    if (!fffff.open(QFile::ReadOnly)) {
+        qDebug() << fffff.errorString();
+        QMessageBox::critical(this, "Error", "Can't parse data. Exiting....");
+        exit(1);
+    } else {
+        while (!fffff.atEnd()) {
+            QByteArray line = fffff.readLine();
+            QList<QByteArray> list = line.split(',');
+            ad[list.value(0).toInt()] = list.value(1).toDouble();
+        }
+    }
+    fffff.close();
+    Data::airDensity = ad;
+
     statusBar()->showMessage("Computing data...");
     // COMPUTING PRANDTL NUMBER
-    QHash<int, float> prandtl;
-    for (int i = 273 ; i< 2000;i++) {
+    QHash<int, double> prandtl;
+    for (int i = 273 ; i< 20000;i++) {
         prandtl[i] = cp[i]*vs[i]/tc[i];
     }
     Data::airPrandtl = prandtl;
+
+    // COMPUTING KINEMATIC VISCOSITY
+    QHash<int, double> kinematic;
+    for (int i = 273; i<20000; i++) {
+        kinematic[i] = vs[i]/ad[i];
+    }
+    Data::airKinematicViscosity = kinematic;
+    qDebug() << "viscosité cinématique 25°C : " << kinematic[273+25];
+
     qDebug() << Data::airThermalConductivity[1400];
     qDebug() << Data::airCp[1400];
     qDebug() << Data::airDynamicViscosity[1400];
@@ -305,6 +335,7 @@ Simulator::~Simulator()
     thread2->terminate();
     thread3->terminate();
     thread4->terminate();
+    thread5->terminate();
 }
 
 QLabel *Simulator::createLabel(const QString &text)
@@ -406,7 +437,7 @@ void Simulator::abordButton() {
     state_label->setText("Stopped");
     setRed(state_label);
     isRunning = false;
-    cond.wait(&lock);
+   // cond.wait(&lock);
 }
 
 void Simulator::restart() {
@@ -443,8 +474,8 @@ void Simulator::refreshDone() {
 void Simulator::updateMap() {
 
     nbThreadDone += 1;
-    qDebug() << "Update called";
-    qDebug() << "Water evaporation temperature" << Data::water_evaporation_temperature;
+   // qDebug() << "Update called";
+   // qDebug() << "Water evaporation temperature" << Data::water_evaporation_temperature;
     if (nbThreadDone >= Data::thread_nb) {
         nbThreadDone =0;
         /*for (int i = 0 ; i<Data::grid_size;i++) {
@@ -459,7 +490,7 @@ void Simulator::updateMap() {
                 }
             }
         }*/
-        qDebug() << Data::grid_energy[1][1];
+        qDebug() << "Energie 11" << Data::grid_energy[1][1];
         for (int i = 0 ; i<Data::grid_size; i++) {
             for (int j = 0 ; j <Data::grid_size; j++) {
                 // qDebug() << Data::grid_energy[i][j];
@@ -467,7 +498,7 @@ void Simulator::updateMap() {
 
                     Data::grid_case_temperature[i][j] = Data::ambientTemperature(i,j);
 
-                } else if (Data::grid_state[i][j] == Data::STATE_TREES || Data::grid_state[i][j] == Data::STATE_GRASS) {
+                } else if ((Data::grid_state[i][j] == Data::STATE_TREES || Data::grid_state[i][j] == Data::STATE_GRASS) && Data::grid_energy[i][j] > 0) {
                     if (Data::grid_case_temperature[i][j] < Data::water_evaporation_temperature) { // DESSICATION DU VEGETAL : augmentation de la température
 
                         double FMC = Data::grid_water_mass[i][j]/Data::grid_mass_to_burn[i][j];
@@ -489,17 +520,28 @@ void Simulator::updateMap() {
                         Data::grid_state[i][j] = Data::STATE_ON_FIRE;
                     }
                 } else if (Data::grid_state[i][j] == Data::STATE_ON_FIRE) { // calcul des paramètres de flamme et cinétique du carburant
-                    double k = Data::A*exp(-Data::Ea/(Data::CONSTANT_GAS*Data::grid_case_temperature[i][j])); // constante cinétique
-                    double new_mass = Data::grid_mass_to_burn[i][j]*exp(-k*Data::dt); // calcul de la nouvelle masse et du delta
-                    double Qheat = (Data::grid_mass_to_burn[i][j]-new_mass)*Data::combustion_enthalpy;
-                    Data::grid_flame_length[i][j] = 0.0148*pow(Qheat, 0.4)-1.02*Data::grid_tree_width[i][j];
+                   // double tau = 75600/Data::sigma;
+                double k = Data::A*exp(-Data::Ea/(Data::CONSTANT_GAS*Data::grid_case_temperature[i][j])); // constante cinétique
+               double new_mass = Data::grid_mass_to_burn[i][j]*exp(-k*Data::dt); // calcul de la nouvelle masse et du delta
+                 //   double mass_loss = Data::grid_mass_to_burn[i][j]/tau;
+                    double Qheat = (Data::grid_mass_to_burn[i][j] - new_mass)*Data::combustion_enthalpy;
+                   // double Qheat = mass_loss*Data::combustion_enthalpy;
 
                     double flame_power = Data::part_of_lost_heat*Qheat/(3.14159*Data::grid_tree_width[i][j]*Data::grid_flame_length[i][j]);
-                    double flame_emissivity = 1-exp(-0.6*Data::grid_flame_length[i][j]);
+                    double flame_emissivity = 1-exp(-0.6*Data::grid_flame_length[i][j]);// < 1
 
-                    Data::grid_flame_temperature[i][j] = pow(flame_power/(flame_emissivity*Data::CONSTANT_Stephane_Boltzmann),1/4); // Calcul de la température de la flamme
+                    Data::grid_flame_temperature[i][j] = pow(flame_power/(flame_emissivity*Data::CONSTANT_Stephane_Boltzmann),0.25)+273.15; // Calcul de la température de la flamme
+                    Data::grid_flame_length[i][j] = abs(0.0148*pow(Qheat, 0.4)-1.02*Data::grid_tree_width[i][j]);
                     Data::grid_mass_to_burn[i][j] = new_mass;
-                    if (new_mass < 0.5) {
+                   // Data::grid_mass_to_burn[i][j] -= mass_loss;
+                   /* if (Data::grid_flame_length[i][j] < 1e-2) {
+                        Data::grid_state[i][j] = Data::STATE_HOT_BURNT;
+                    }*/
+                    qDebug() << "Puissance flamme " << flame_power;
+                    qDebug() << "Chaleur " << Qheat;
+                    qDebug() << "Température flamme " << Data::grid_flame_temperature[i][j];
+                    qDebug() << "Longueur flamme " << Data::grid_flame_length[i][j];
+                    if (Data::grid_mass_to_burn[i][j] < 0) {
                         Data::grid_state[i][j] = Data::STATE_HOT_BURNT;
                         Data::grid_flame_length[i][j] = 0.0;
                         Data::grid_flame_temperature[i][j] = 0.0;
@@ -511,7 +553,7 @@ void Simulator::updateMap() {
                 Data::grid_energy[i][j] = 0.0; //reset to 0
             }
         }
-        qDebug() << Data::grid_case_temperature[1][1];
+        qDebug() << "Température case 11" << Data::grid_case_temperature[1][1];
 
         canvas->repaint();
         calculusState += 1;
@@ -565,6 +607,7 @@ void Simulator::startSimulation() {
         thread2->start();
         thread3->start();
         thread4->start();
+        thread5->start();
         isStarted = true;
 
     }

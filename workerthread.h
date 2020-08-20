@@ -16,6 +16,7 @@ public:
     double internal_convection(int k, int l, int i, int j);
     double ember_radiation(int k, int l, int i, int j);
     double radiation_loss(int k, int l);
+    double flame_radiation(int k, int l, int i, int j);
     void requestStop();
     void requestRestart();
 signals:

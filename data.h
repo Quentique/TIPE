@@ -33,8 +33,8 @@ public:
     static const int nb_states = 7; // Number of available states
     static const int grid_size = 64; // Grid size (in units)
     static const int spatialResolution = 20; // = side size of each case in meters
-    static const int dt = 30*60; // pas de calcul, en s
-    static const int thread_nb = 4;
+    static constexpr double dt = 60.0; // pas de calcul, en s
+    static const int thread_nb = 5;
     static int grid_state[grid_size][grid_size];
     static double grid_energy[grid_size][grid_size]; // J
     static double grid_tree_height[grid_size][grid_size]; // m
@@ -60,28 +60,30 @@ public:
     static constexpr double average_moisture = 0.42; // %
     static constexpr double hot_burnt_temperature_limit = 273.15+200.0; // K
     static constexpr double water_evaporation_temperature = 273.15+100.0; // K
-    static constexpr double pyrolisis_temperature = 273.15+0.0;  // to be completed
+    static constexpr double pyrolisis_temperature = 561.0;  // to be completed
     static constexpr double ignition_temperature = 561.0;
 
     static constexpr double volumic_mass_DFF = 512.0; //kg/m^3
     static constexpr double surface_mass_DFF = 0.313; // kg/m^2
     static constexpr double surface_mass_water = 0.0182; //kg/m^2
     static constexpr double cp_water = 4180.0; // J/kg/K
-    static constexpr double water_latente_heat = 2260.0; // J/kg
-    static constexpr double emissivity = 0.9;
+    static constexpr double water_latente_heat =  2264760.0; // J/kg
+    static constexpr double emissivity = 0.8;
     static constexpr double combustion_enthalpy = 14454000.0; // J/kg
     static constexpr double absorptivity = 0.8; // a
     static constexpr double sigma = 12240.0; // 1/m (rapport surface volume des aiguilles)
     static constexpr double part_of_lost_heat = 0.35;
     static constexpr double diameter_branch = 0.00252; // m
 
-    static constexpr double CONSTANT_Stephane_Boltzmann = 5.670374e-8;
-    static constexpr double CONSTANT_GAS = 8.314462;
+    static constexpr double CONSTANT_Stephane_Boltzmann = 5.670374e-8; // SI UNITS
+    static constexpr double CONSTANT_GAS = 8.314462; // SI UNITS
 
     static constexpr double A = 646934.285; // s^-1
-    static constexpr double Ea = 182680.0; // kJ/mol
+    static constexpr double Ea = 182680.0; // J/mol
 
-    static QHash<int, float> airCp, airCv, airThermalConductivity, airDynamicViscosity, airPrandtl;
+    static double lx, ly;
+
+    static QHash<int, double> airCp, airCv, airThermalConductivity, airDynamicViscosity, airPrandtl, airDensity, airKinematicViscosity;
 
     static int currently_selected_state, wind_direction, wind_strengh_value, ambientTemperatureValue, ambientHumidityValue;
 
