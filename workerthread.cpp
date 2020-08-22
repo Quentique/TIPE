@@ -141,8 +141,10 @@ double WorkerThread::convection(int k, int l, int i, int j) {
         if (i == 1 && j ==1) {
             qDebug() << "Convection de surface : " << (h/Data::grid_delta_eff[i][j]*(Data::grid_flame_temperature[k][l]-Data::grid_case_temperature[i][j])*exp(-dist/(3.33*Data::grid_flame_length[k][l])));
         }
-
-        return ((h/Data::grid_delta_eff[i][j])*(Data::grid_flame_temperature[k][l]-Data::grid_case_temperature[i][j])*exp(-dist/(3.33*Data::grid_flame_length[k][l])));
+        double conv = ((h/Data::grid_delta_eff[i][j])*(Data::grid_flame_temperature[k][l]-Data::grid_case_temperature[i][j])*exp(-dist/(3.33*Data::grid_flame_length[k][l])));
+        if (conv > 0) {
+            return conv;
+        } else { return 0.0; }
 
     } else {
         return 0.0;
@@ -164,11 +166,19 @@ double WorkerThread::internal_convection(int k, int l, int i, int j) {
         double h = 0.911*Data::airThermalConductivity[Data::grid_case_temperature[i][j]]/Data::diameter_branch*pow(Data::wind_strengh_value*Data::diameter_branch/Data::airKinematicViscosity[Data::grid_case_temperature[i][j]], 0.385)*pow(Data::airPrandtl[Data::grid_case_temperature[i][j]], 1/3);
 
         if (i == 1 && j == 1) {
+            qDebug() << "INTERNAL CONVECTION ----- " << k << " & " << l;
             qDebug() << "Distance : " << dist;
             qDebug() << "h : " << h;
+            qDebug() << "Delta : " << Data::grid_delta[i][j];
+            qDebug() << "Temperature flamme : " << Data::grid_flame_temperature[k][l];
+            qDebug() << "Temperature case " << Data::grid_case_temperature[i][j];
             qDebug() << "Convection interne : " << (4/Data::grid_delta[i][j]*h*(Data::grid_flame_temperature[k][l]-Data::grid_case_temperature[i][j])*exp(-dist/Data::grid_delta[i][j]));
+            qDebug() << "END INTERNAL CONVECTION ";
         }
-        return (4/Data::grid_delta[i][j]*h*(Data::grid_flame_temperature[k][l]-Data::grid_case_temperature[i][j])*exp(-dist/Data::grid_delta[i][j]));
+        double conv = (4/Data::grid_delta[i][j]*h*(Data::grid_flame_temperature[k][l]-Data::grid_case_temperature[i][j])*exp(-dist/Data::grid_delta[i][j]));
+        if (conv > 0) {
+            return conv;
+        } else { return 0.0; }
 
     } else {
         return 0.0;
@@ -180,9 +190,9 @@ double WorkerThread::ember_radiation(int k, int l, int i, int j) {
     if (Data::grid_state[k][l] == Data::STATE_ON_FIRE && k != i && l != j){
         double dist = Data::distance(k,l,i,j);
         if (i == 1 && j== 1) {
-            qDebug() << "radiation des braises " << 1/Data::grid_delta[i][j]*Data::emissivity*Data::CONSTANT_Stephane_Boltzmann*pow(Data::grid_flame_temperature[k][l],4)*exp(-dist/Data::grid_delta[i][j]);
+           // qDebug() << "radiation des braises " << 1/Data::grid_delta[i][j]*Data::emissivity*Data::CONSTANT_Stephane_Boltzmann*pow(Data::grid_flame_temperature[k][l],4)*exp(-dist/Data::grid_delta[i][j]);
         }
-        return 1/Data::grid_delta[i][j]*Data::emissivity*Data::CONSTANT_Stephane_Boltzmann*pow(Data::grid_flame_temperature[k][l],4)*exp(-dist/Data::grid_delta[i][j]);
+        return 1/Data::grid_delta[i][j]*Data::emissivity*Data::CONSTANT_Stephane_Boltzmann*pow(Data::grid_flame_temperature[k][l],4)*exp(-dist/Data::grid_delta[i][j]); // always > 0
     } else {
         return 0.0;
     }
@@ -191,7 +201,7 @@ double WorkerThread::ember_radiation(int k, int l, int i, int j) {
 double WorkerThread::radiation_loss(int k, int l) {
     if (Data::grid_state[k][l] == Data::STATE_ON_FIRE) {
 
-        return -1/Data::grid_delta_eff[k][l]*Data::CONSTANT_Stephane_Boltzmann*Data::emissivity*(pow(Data::grid_flame_temperature[k][l],4)-pow(Data::ambientTemperature(k,l),4));
+        return -1/Data::grid_delta_eff[k][l]*Data::CONSTANT_Stephane_Boltzmann*Data::emissivity*(pow(Data::grid_flame_temperature[k][l],4)-pow(Data::ambientTemperature(k,l),4)); // always < 0
     } else {return 0.0; }
 }
 
@@ -207,12 +217,13 @@ double WorkerThread::flame_radiation(int k, int l, int i, int j) {
         double flame_power = Data::part_of_lost_heat*Qheat/(3.14159*Data::grid_tree_width[k][l]*Data::grid_flame_length[k][l]);
        // double flame_emissivity = 1-exp(-0.6*Data::grid_flame_length[k][l]);// < 1
 
-        double power = flame_power*3.14159*Data::grid_tree_width[k][l]*Data::grid_flame_length[k][l];
+        double power = flame_power*3.14159*Data::grid_tree_width[k][l]*Data::grid_flame_length[k][l]; // no use zurzeit
+
 
         if (i == 1 && j == 1) {
             qDebug() << "Radiations flamme " << power*(pow(((k-i)/Data::lx),2)+pow(((l-j)/Data::ly),2));
         }
-        // return power*(pow(((k-i)/Data::lx),2)+pow(((l-j)/Data::ly),2));
-        return 0.0;
+         return power*(pow(((k-i)/Data::lx),2)+pow(((l-j)/Data::ly),2));
+       // return 0.0;
     } else { return 0.0; }
 }

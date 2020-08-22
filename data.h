@@ -33,7 +33,7 @@ public:
     static const int nb_states = 7; // Number of available states
     static const int grid_size = 64; // Grid size (in units)
     static const int spatialResolution = 20; // = side size of each case in meters
-    static constexpr double dt = 60.0; // pas de calcul, en s
+    static constexpr double dt = 10.0; // pas de calcul, en s
     static const int thread_nb = 5;
     static int grid_state[grid_size][grid_size];
     static double grid_energy[grid_size][grid_size]; // J

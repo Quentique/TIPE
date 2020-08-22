@@ -66,6 +66,11 @@ Simulator::Simulator(QWidget *parent)
     save_to_csv = new QCheckBox("Save data to CSV");
     state_label = new QLabel("Not running...");
 
+    time_simulation_computed = new QTimeEdit;
+    time_simulation_computed->setDisplayFormat("hh 'h' mm 'm' ss 's'");
+    time_simulation_computed->setTime(QTime(0,0,0));
+    time_simulation_computed->setDisabled(true);
+
     ambientHumidity = new QSpinBox;
     ambientTemperature = new QSpinBox;
     ambientHumidity->setSuffix(" %");
@@ -172,6 +177,7 @@ Simulator::Simulator(QWidget *parent)
     main_state_layout->addStretch(1);
     main_state_layout->addWidget(createLabel("Steps count"));
     main_state_layout->addWidget(steps_number);
+    main_state_layout->addWidget(time_simulation_computed);
     state_layout->addLayout(main_state_layout);
     state_layout->addStretch(1);
     state_layout->addLayout(legend);
@@ -331,6 +337,7 @@ Simulator::Simulator(QWidget *parent)
 
 Simulator::~Simulator()
 {
+    // avoid memory loss
     thread1->terminate();
     thread2->terminate();
     thread3->terminate();
@@ -352,7 +359,7 @@ void Simulator::setGreen(QLabel *pointer) {
     pointer->setStyleSheet("color: green;");
 }
 
-void Simulator::serializeData() {
+void Simulator::serializeData() { // to be checked
     statusBar()->showMessage("Saving data...");
     QJsonArray data;
     for (int i = 0 ; i<Data::grid_size; i++) {
@@ -478,18 +485,6 @@ void Simulator::updateMap() {
    // qDebug() << "Water evaporation temperature" << Data::water_evaporation_temperature;
     if (nbThreadDone >= Data::thread_nb) {
         nbThreadDone =0;
-        /*for (int i = 0 ; i<Data::grid_size;i++) {
-            for (int j = 0 ; j<Data::grid_size;j++) {
-
-                if (Data::grid_energy[i][j] == 100) {
-                    Data::grid_state[i][j] = 1;
-                } else if (Data::grid_energy[i][j] == 200) {
-                    Data::grid_state[i][j] = 2;
-                } else {
-                    Data::grid_state[i][j] = 0;
-                }
-            }
-        }*/
         qDebug() << "Energie 11" << Data::grid_energy[1][1];
         for (int i = 0 ; i<Data::grid_size; i++) {
             for (int j = 0 ; j <Data::grid_size; j++) {
@@ -498,7 +493,7 @@ void Simulator::updateMap() {
 
                     Data::grid_case_temperature[i][j] = Data::ambientTemperature(i,j);
 
-                } else if ((Data::grid_state[i][j] == Data::STATE_TREES || Data::grid_state[i][j] == Data::STATE_GRASS) && Data::grid_energy[i][j] > 0) {
+                } else if (((Data::grid_state[i][j] == Data::STATE_TREES) || (Data::grid_state[i][j] == Data::STATE_GRASS)) && Data::grid_energy[i][j] > 0) {
                     if (Data::grid_case_temperature[i][j] < Data::water_evaporation_temperature) { // DESSICATION DU VEGETAL : augmentation de la température
 
                         double FMC = Data::grid_water_mass[i][j]/Data::grid_mass_to_burn[i][j];
@@ -518,6 +513,27 @@ void Simulator::updateMap() {
                         Data::grid_case_temperature[i][j] += Data::dt*Data::grid_energy[i][j]/(Data::grid_alpha[i][j]*Data::volumic_mass_DFF*cp_DFF);
                     } else { // Toutes les conditions sont réunies : mise à feu
                         Data::grid_state[i][j] = Data::STATE_ON_FIRE;
+                        Data::grid_flame_temperature[i][j] = 900;
+                        Data::grid_case_temperature[i][j] = 900;
+                        Data::grid_flame_length[i][j] = 2.0;
+                      /*  qDebug() << "Mise à feu de la case " << i << j;
+                        qDebug() << "Masse avant calcul (supposée non nulle) " << Data::grid_mass_to_burn[i][j];
+                        qDebug() << "Température de la case " << Data::grid_case_temperature[i][j];
+                        // NE PAS OUBLIER DE CALCULER LES PARAMETRES DE LA FLAMME BORDEL
+                        double k = Data::A*exp(-Data::Ea/(Data::CONSTANT_GAS*Data::grid_case_temperature[i][j])); // constante cinétique
+                       double new_mass = Data::grid_mass_to_burn[i][j]*exp(-k*Data::dt); // calcul de la nouvelle masse et du delta
+                         //   double mass_loss = Data::grid_mass_to_burn[i][j]/tau;
+                       qDebug() << " K : " << k;
+                       qDebug() << "new mass : " << new_mass;
+                            double Qheat = (Data::grid_mass_to_burn[i][j] - new_mass)*Data::combustion_enthalpy;
+                           // double Qheat = mass_loss*Data::combustion_enthalpy;
+                            Data::grid_flame_length[i][j] = abs(0.0148*pow(Qheat, 0.4)-1.02*Data::grid_tree_width[i][j]);
+                            double flame_power = Data::part_of_lost_heat*Qheat/(3.14159*Data::grid_tree_width[i][j]*Data::grid_flame_length[i][j]);
+                            double flame_emissivity = 1-exp(-0.6*Data::grid_flame_length[i][j]);// < 1
+                            //qDebug() << "Old parameters, flame length : " << Data::grid_flame_length[i][j];
+
+                            Data::grid_flame_temperature[i][j] = std::max(pow(flame_power/(flame_emissivity*Data::CONSTANT_Stephane_Boltzmann),0.25)+273.15, Data::grid_case_temperature[i][j]); // Calcul de la température de la flamme
+                            Data::grid_mass_to_burn[i][j] = new_mass;*/
                     }
                 } else if (Data::grid_state[i][j] == Data::STATE_ON_FIRE) { // calcul des paramètres de flamme et cinétique du carburant
                    // double tau = 75600/Data::sigma;
@@ -525,10 +541,14 @@ void Simulator::updateMap() {
                double new_mass = Data::grid_mass_to_burn[i][j]*exp(-k*Data::dt); // calcul de la nouvelle masse et du delta
                  //   double mass_loss = Data::grid_mass_to_burn[i][j]/tau;
                     double Qheat = (Data::grid_mass_to_burn[i][j] - new_mass)*Data::combustion_enthalpy;
+                    qDebug() << "Mass loose : " << Data::grid_mass_to_burn[i][j] - new_mass;
+                    qDebug() << "K value : " << k;
+                    qDebug() << "Mass to burn " << Data::grid_mass_to_burn[i][j];
                    // double Qheat = mass_loss*Data::combustion_enthalpy;
 
                     double flame_power = Data::part_of_lost_heat*Qheat/(3.14159*Data::grid_tree_width[i][j]*Data::grid_flame_length[i][j]);
                     double flame_emissivity = 1-exp(-0.6*Data::grid_flame_length[i][j]);// < 1
+                    qDebug() << "Old parameters, flame length : " << Data::grid_flame_length[i][j];
 
                     Data::grid_flame_temperature[i][j] = pow(flame_power/(flame_emissivity*Data::CONSTANT_Stephane_Boltzmann),0.25)+273.15; // Calcul de la température de la flamme
                     Data::grid_flame_length[i][j] = abs(0.0148*pow(Qheat, 0.4)-1.02*Data::grid_tree_width[i][j]);
@@ -538,6 +558,7 @@ void Simulator::updateMap() {
                         Data::grid_state[i][j] = Data::STATE_HOT_BURNT;
                     }*/
                     qDebug() << "Puissance flamme " << flame_power;
+                    qDebug() << "Tree width " << Data::grid_tree_width[i][j];
                     qDebug() << "Chaleur " << Qheat;
                     qDebug() << "Température flamme " << Data::grid_flame_temperature[i][j];
                     qDebug() << "Longueur flamme " << Data::grid_flame_length[i][j];
@@ -558,6 +579,7 @@ void Simulator::updateMap() {
         canvas->repaint();
         calculusState += 1;
         steps_number->display(calculusState);
+        time_simulation_computed->setTime(time_simulation_computed->time().addSecs(Data::dt));
         cond.wait(&lock,10000);
         if (isRunning) {
             cond.wakeAll();
@@ -586,7 +608,7 @@ void Simulator::startSimulation() {
                 if (Data::grid_state[i][j] != Data::STATE_ON_FIRE) {
                     Data::grid_case_temperature[i][j] = Data::ambientTemperatureValue;
                 }
-                if (Data::grid_state[i][j] == Data::STATE_TREES || Data::grid_state[i][j] == Data::STATE_GRASS) {
+                if ((Data::grid_state[i][j] == Data::STATE_TREES) || (Data::grid_state[i][j] == Data::STATE_GRASS)) {
                     Data::grid_mass_to_burn[i][j] = Data::surface_mass_DFF*3.14159*pow(Data::grid_tree_width[i][j]/2,2)*Data::grid_tree_height[i][j];
                             //Data::volumic_mass_DFF*3.14159*pow(Data::grid_tree_width[i][j]/2,2)*Data::grid_tree_height[i][j];
                     Data::grid_alpha[i][j] = Data::surface_mass_DFF/(Data::grid_tree_height[i][j]*Data::volumic_mass_DFF);

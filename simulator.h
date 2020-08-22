@@ -16,6 +16,7 @@
 #include <QWaitCondition>
 #include <QThread>
 #include <QVector>
+#include <QTimeEdit>
 #include "canvas.h"
 #include "workerthread.h"
 
@@ -67,6 +68,7 @@ private:
     Canvas *canvas;
     WorkerThread *thread1, *thread2, *thread3, *thread4, *thread5;
     QLineEdit *simulation_name;
+    QTimeEdit *time_simulation_computed;
    // QVector<QPushButton*> buttons_edition_map;
 
     static void setRed(QLabel *pointer);
