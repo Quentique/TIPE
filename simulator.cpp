@@ -332,6 +332,7 @@ Simulator::Simulator(QWidget *parent)
     qDebug() << Data::airDynamicViscosity[1400];
     qDebug() << Data::airPrandtl[1400];
     statusBar()->showMessage("Ready.");
+
     //grab().save("test.png");
 }
 

@@ -81,7 +81,7 @@ public:
     static constexpr double A = 646934.285; // s^-1
     static constexpr double Ea = 182680.0; // J/mol
 
-    static double lx, ly;
+    static double lxm, lxp, lym, lyp; // modeling wind direction through flame radiation
 
     static QHash<int, double> airCp, airCv, airThermalConductivity, airDynamicViscosity, airPrandtl, airDensity, airKinematicViscosity;
 

@@ -17,8 +17,10 @@ int Data::wind_strengh_value = 0;
 int Data::ambientTemperatureValue = 0;
 int Data::ambientHumidityValue = 0;
 
-double Data::lx = Data::spatialResolution/10;
-double Data::ly = Data::spatialResolution/10;
+double Data::lxm = Data::spatialResolution/10;
+double Data::lym = Data::spatialResolution/10;
+double Data::lxp = Data::spatialResolution/10;
+double Data::lyp = Data::spatialResolution/10;
 
 double Data::grid_energy[][Data::grid_size] = {{0}};
 double Data::grid_tree_height[][Data::grid_size] = {{0}};

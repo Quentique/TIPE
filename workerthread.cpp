@@ -208,18 +208,55 @@ double WorkerThread::radiation_loss(int k, int l) {
 double WorkerThread::flame_radiation(int k, int l, int i, int j) {
     if (Data::grid_state[k][l] == Data::STATE_ON_FIRE) {
       //  double tau = 75600/Data::sigma;
-        double kcoeff = Data::A*exp(-Data::Ea/(Data::CONSTANT_GAS*Data::grid_case_temperature[i][j])); // constante cinétique
+        double kcoeff = Data::A*exp(-Data::Ea/(Data::CONSTANT_GAS*Data::grid_case_temperature[k][l])); // constante cinétique
       double new_mass = Data::grid_mass_to_burn[i][j]*exp(-kcoeff*Data::dt); // calcul de la nouvelle masse et du delta
       // double mass_loss = Data::grid_mass_to_burn[k][l]/tau;
         double Qheat = (Data::grid_mass_to_burn[i][j] - new_mass)*Data::combustion_enthalpy;
-
+      //  qDebug
+      //  qDebug() << "K coeff, flame radiation calculus " << kcoeff;
 
         double flame_power = Data::part_of_lost_heat*Qheat/(3.14159*Data::grid_tree_width[k][l]*Data::grid_flame_length[k][l]);
         double flame_emissivity = 1-exp(-0.6*Data::grid_flame_length[k][l]);// < 1
 
         double power = flame_power*3.14159*Data::grid_tree_width[k][l]*Data::grid_flame_length[k][l]*flame_emissivity;
-        double coeff = sqrt(pow(Data::lx/std::max((double)(abs(k-i)), Data::lx+1),2)+pow(Data::ly/std::max((double)(abs(l-j)),Data::ly+1),2));
+       // double coeff = sqrt(2)*sqrt(pow(Data::lxm/(2*std::max((double)(abs(k-i)), Data::lxm+1)),2)+pow(Data::lym/(2*std::max((double)(abs(l-j)),Data::lym+1)),2)+pow(Data::lyp/(2*std::max((double)(abs(l-j)),Data::lyp+1)),2)+pow(Data::lxp/(2*std::max((double)(abs(k-i)),Data::lxp+1)),2));
+        // POWER DIMINUTION COEFFICIENT CALCULUS
+        double to_add = pow(Data::lxm/(4*std::max((double)abs(k-i), Data::lxm+10)), 2)+pow(Data::lym/(4*std::max((double)abs(l-j),Data::lym+10)),2);
 
+        if (k-i >= 0) { // signifie que le feu est à droite de la case
+            if (Data::wind_direction == Data::WIND_W) {
+                to_add += pow(Data::lxp/std::max((double)(abs(k-i)), Data::lxm+1), 2);
+            }
+            if (Data::wind_direction == Data::WIND_NW || Data::wind_direction == Data::WIND_SW) {
+                to_add += 2*pow(Data::lxp/(2*std::max((double)abs(k-i), Data::lxp+1)),2);
+            }
+        } else { // feu à gauche de la case
+            if (Data::wind_direction == Data::WIND_E) {
+                to_add += pow(Data::lxp/std::max((double)(abs(k-i)), Data::lxm+1), 2);
+            }
+            if (Data::wind_direction == Data::WIND_NE || Data::wind_direction == Data::WIND_SE) {
+                to_add += 2*pow(Data::lxm/(2*std::max((double)abs(k-i), Data::lxm+1)),2);
+            }
+        }
+
+        if (l-j >= 0) { // feu en bas de la case
+            if (Data::wind_direction == Data::WIND_N){
+                to_add += pow(Data::lyp/std::max((double)abs(l-j), Data::lyp+1),2);
+            }
+            if (Data::wind_direction == Data::WIND_NW || Data::wind_direction == Data::WIND_NE) {
+                to_add += 2*pow(Data::lyp/(2*std::max((double)abs(l-j), Data::lyp+1)),2);
+            }
+        } else {
+            if (Data::wind_direction == Data::WIND_S) {
+                to_add += pow(Data::lym/std::max((double)abs(l-j), Data::lym+1),2);
+            }
+            if (Data::wind_direction == Data::WIND_SE || Data::wind_direction == Data::WIND_SW) {
+                to_add += 2*pow(Data::lym/(2*std::max((double)abs(l-j), Data::lym+1)),2);
+            }
+        }
+        //to_add /= 4;
+
+        double coeff = sqrt(to_add)*exp(-(Data::distance(i,j,k,l))/(Data::spatialResolution));
         if (i == 1 && j == 1) {
            // qDebug() << "test 2 " << std::max((double)(abs(k-i)), Data::lx+1);
             qDebug() << "Nouveau coefficient de radiations des flammes : " << coeff;
