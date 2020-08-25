@@ -207,23 +207,27 @@ double WorkerThread::radiation_loss(int k, int l) {
 
 double WorkerThread::flame_radiation(int k, int l, int i, int j) {
     if (Data::grid_state[k][l] == Data::STATE_ON_FIRE) {
-        double tau = 75600/Data::sigma;
-       // double k = Data::A*exp(-Data::Ea/(Data::CONSTANT_GAS*Data::grid_case_temperature[i][j])); // constante cinétique
-        //double new_mass = Data::grid_mass_to_burn[i][j]*exp(-k*Data::dt); // calcul de la nouvelle masse et du delta
-        double mass_loss = Data::grid_mass_to_burn[k][l]/tau;
-        double Qheat = mass_loss*Data::combustion_enthalpy;
+      //  double tau = 75600/Data::sigma;
+        double kcoeff = Data::A*exp(-Data::Ea/(Data::CONSTANT_GAS*Data::grid_case_temperature[i][j])); // constante cinétique
+      double new_mass = Data::grid_mass_to_burn[i][j]*exp(-kcoeff*Data::dt); // calcul de la nouvelle masse et du delta
+      // double mass_loss = Data::grid_mass_to_burn[k][l]/tau;
+        double Qheat = (Data::grid_mass_to_burn[i][j] - new_mass)*Data::combustion_enthalpy;
 
 
         double flame_power = Data::part_of_lost_heat*Qheat/(3.14159*Data::grid_tree_width[k][l]*Data::grid_flame_length[k][l]);
-       // double flame_emissivity = 1-exp(-0.6*Data::grid_flame_length[k][l]);// < 1
+        double flame_emissivity = 1-exp(-0.6*Data::grid_flame_length[k][l]);// < 1
 
-        double power = flame_power*3.14159*Data::grid_tree_width[k][l]*Data::grid_flame_length[k][l]; // no use zurzeit
-
+        double power = flame_power*3.14159*Data::grid_tree_width[k][l]*Data::grid_flame_length[k][l]*flame_emissivity;
+        double coeff = sqrt(pow(Data::lx/std::max((double)(abs(k-i)), Data::lx+1),2)+pow(Data::ly/std::max((double)(abs(l-j)),Data::ly+1),2));
 
         if (i == 1 && j == 1) {
-            qDebug() << "Radiations flamme " << power*(pow(((k-i)/Data::lx),2)+pow(((l-j)/Data::ly),2));
+           // qDebug() << "test 2 " << std::max((double)(abs(k-i)), Data::lx+1);
+            qDebug() << "Nouveau coefficient de radiations des flammes : " << coeff;
+
+          //  qDebug() << "Radiations flamme " << power*(pow(((k-i)/Data::lx),2)+pow(((l-j)/Data::ly),2));
+            qDebug() << "Radiations de la flamme : " << power*coeff;
         }
-         return power*(pow(((k-i)/Data::lx),2)+pow(((l-j)/Data::ly),2));
+         return power*coeff;
        // return 0.0;
     } else { return 0.0; }
 }
