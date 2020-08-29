@@ -332,8 +332,6 @@ Simulator::Simulator(QWidget *parent)
     qDebug() << Data::airDynamicViscosity[1400];
     qDebug() << Data::airPrandtl[1400];
     statusBar()->showMessage("Ready.");
-
-    //grab().save("test.png");
 }
 
 Simulator::~Simulator()
@@ -361,44 +359,83 @@ void Simulator::setGreen(QLabel *pointer) {
 }
 
 void Simulator::serializeData() { // to be checked
-    statusBar()->showMessage("Saving data...");
-    QJsonArray data;
-    for (int i = 0 ; i<Data::grid_size; i++) {
-        for (int j = 0 ; j <Data::grid_size ; j++) {
-            QJsonObject obj;
-            obj["x"] = i;
-            obj["y"] = j;
-            obj["state"] = Data::grid_state[i][j];
-            obj["tree_height"] = Data::grid_tree_height[i][j];
-            obj["moisture"] = Data::grid_moisture[i][j];
-            data.append(obj);
+    if (!isRunning) {
+        statusBar()->showMessage("Saving data...");
+        QJsonArray doc;
+        QJsonArray main_data;
+        QJsonObject main;
+        main["ambient_temperature"] = ambientTemperature->value();
+        main["average_moisture"] = ambientHumidity->value();
+        main["wind_direction"] = Data::wind_direction;
+        main["wind_strength"] = wind_strengh->value();
+        main["steps_count"] = calculusState;
+        main_data.append(main);
+        QJsonArray data;
+        for (int i = 0 ; i<Data::grid_size; i++) {
+            for (int j = 0 ; j <Data::grid_size ; j++) {
+                QJsonObject obj;
+                obj["x"] = i;
+                obj["y"] = j;
+                obj["state"] = Data::grid_state[i][j];
+                obj["tree_height"] = Data::grid_tree_height[i][j];
+                obj["tree_width"] = Data::grid_tree_width[i][j];
+                obj["moisture"] = Data::grid_moisture[i][j];
+                obj["temperature"] = Data::grid_case_temperature[i][j];
+                if (obj["state"] == Data::STATE_ON_FIRE) {
+                    obj["flame_temperature"] = Data::grid_flame_temperature[i][j];
+                    obj["flame_length"] = Data::grid_flame_length[i][j];
+                    obj["to_burn"] = Data::grid_mass_to_burn[i][j]; // not recalculated for site on fire
+                }
+                data.append(obj);
+            }
         }
+        doc.append(main_data); // main parameters
+        doc.append(data); // individual parameters
+        QString filename = QFileDialog::getSaveFileName(this, "Select file");
+        QFile file(filename);
+        file.open(QIODevice::WriteOnly);
+        file.write(QJsonDocument(doc).toJson());
+        resetStatusBar();
+    } else {
+        QMessageBox::warning(this, "Unable to save", "Can't save data while computing !");
     }
-    QString filename = QFileDialog::getSaveFileName(this, "Select file");
-    QFile file(filename);
-    file.open(QIODevice::WriteOnly);
-    file.write(QJsonDocument(data).toJson());
-    resetStatusBar();
-
-
 }
 
 
 
 void Simulator::readData() {
-    QString filename = QFileDialog::getOpenFileName(this, "Open data save");
-    QFile file(filename);
-    file.open(QIODevice::ReadOnly);
-    QByteArray rawData = file.readAll();
-    QJsonDocument doc(QJsonDocument::fromJson(rawData));
-    QJsonArray array = doc.array();
-    for (int i = 0 ; i<array.count() ; i++) {
-        QJsonObject obj = array[i].toObject();
-        Data::grid_state[obj["x"].toInt()][obj["y"].toInt()] = obj["state"].toInt();
-        Data::grid_tree_height[obj["x"].toInt()][obj["y"].toInt()] = obj["tree_height"].toDouble();
-        Data::grid_moisture[obj["x"].toInt()][obj["y"].toInt()] = obj["moisture"].toDouble();
+    if (isStarted) {
+        QMessageBox::warning(this, "Unable to load data", "Cannot load data with simulatation already started !");
+    } else {
+        QString filename = QFileDialog::getOpenFileName(this, "Open data save");
+        QFile file(filename);
+        file.open(QIODevice::ReadOnly);
+        QByteArray rawData = file.readAll();
+        QJsonDocument doc(QJsonDocument::fromJson(rawData));
+        QJsonArray main_doc = doc.array();
+        QJsonObject main_data = main_doc[0].toArray()[0].toObject();
+        wind_direction_group->button(main_data["wind_direction"].toInt())->toggle();
+        wind_strengh->setValue(main_data["wind_strength"].toInt());
+        ambientTemperature->setValue(main_data["ambient_temperature"].toInt());
+        ambientHumidity->setValue(main_data["average_moisture"].toInt());
+        steps_number->display(main_data["steps_count"].toInt());
+        calculusState = main_data["steps_count"].toInt();
+        QJsonArray array = main_doc[1].toArray();
+        for (int i = 0 ; i<array.count() ; i++) {
+            QJsonObject obj = array[i].toObject();
+            Data::grid_state[obj["x"].toInt()][obj["y"].toInt()] = obj["state"].toInt();
+            Data::grid_tree_height[obj["x"].toInt()][obj["y"].toInt()] = obj["tree_height"].toDouble();
+            Data::grid_moisture[obj["x"].toInt()][obj["y"].toInt()] = obj["moisture"].toDouble();
+            Data::grid_tree_width[obj["x"].toInt()][obj["y"].toInt()] = obj["tree_width"].toDouble();
+            Data::grid_case_temperature[obj["x"].toInt()][obj["y"].toInt()] = obj["temperature"].toDouble();
+            if (obj["state"] == Data::STATE_ON_FIRE) {
+                Data::grid_flame_length[obj["x"].toInt()][obj["y"].toInt()] = obj["flame_length"].toDouble();
+                Data::grid_flame_temperature[obj["x"].toInt()][obj["y"].toInt()] = obj["flame_temperature"].toDouble();
+                Data::grid_mass_to_burn[obj["x"].toInt()][obj["y"].toInt()] = obj["to_burn"].toDouble();
+            }
+        }
+        canvas->repaint();
     }
-    canvas->repaint();
 }
 
 void Simulator::selectionEditionMapButton(int button) {
@@ -417,7 +454,6 @@ void Simulator::generateRandom() {
     statusBar()->showMessage("Generating map...");
     int dgb = density->value();
     int dhb = trees_density->value();
-   // std::default_random_engine generator;
 
     for (int i = 0 ; i<Data::grid_size ; i++) {
         for (int j=0; j<Data::grid_size ; j++) {
@@ -439,13 +475,10 @@ void Simulator::generateRandom() {
 }
 
 void Simulator::abordButton() {
-    //thread1->requestStop();
-    //thread2->requestStop();
     start_simulation->setDisabled(false);
     state_label->setText("Stopped");
     setRed(state_label);
-    isRunning = false;
-   // cond.wait(&lock);
+    isRunning = false; // tells threads to stop
 }
 
 void Simulator::restart() {

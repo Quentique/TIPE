@@ -20,11 +20,6 @@
 #include "canvas.h"
 #include "workerthread.h"
 
-QT_BEGIN_NAMESPACE
-namespace Ui { class Simulator; }
-QT_END_NAMESPACE
-
-
 class Simulator : public QMainWindow
 {
     Q_OBJECT

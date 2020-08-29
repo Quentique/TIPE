@@ -114,12 +114,6 @@ void WorkerThread::requestStop() {
     lock->unlock();
 }
 
-void WorkerThread::requestRestart() {
-    lock->lockForWrite();
-    stopRequested = false;
-    lock->unlock();
-    run();
-}
 double WorkerThread::convection(int k, int l, int i, int j) {
     // FROM SITE kl on fire to site ij
   /*  // SET ON FIRE ACCORDING TO CURRENT STATE

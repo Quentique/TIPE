@@ -104,6 +104,8 @@ void Data::setupFire(int i, int j) {
     Data::grid_case_temperature[i][j] = 900;
     Data::grid_flame_length[i][j] = 3.0;
     Data::grid_mass_to_burn[i][j] = 10.0;
+    Data::grid_tree_width[i][j] = Data::average_width_trees;
+    Data::grid_tree_height[i][j] = Data::average_height_trees;
 }
 
 int Data::voisinage(int i, int j, int state = 0) {

@@ -18,7 +18,6 @@ public:
     double radiation_loss(int k, int l);
     double flame_radiation(int k, int l, int i, int j);
     void requestStop();
-    void requestRestart();
 signals:
     void calculusEnded();
     void done();
