@@ -401,8 +401,6 @@ void Simulator::serializeData() { // to be checked
     }
 }
 
-
-
 void Simulator::readData() {
     if (isStarted) {
         QMessageBox::warning(this, "Unable to load data", "Cannot load data with simulatation already started !");
@@ -555,30 +553,31 @@ void Simulator::updateMap() {
                         qDebug() << "Température de la case " << Data::grid_case_temperature[i][j];
                         // NE PAS OUBLIER DE CALCULER LES PARAMETRES DE LA FLAMME BORDEL
                         double k = Data::A*exp(-Data::Ea/(Data::CONSTANT_GAS*Data::grid_case_temperature[i][j])); // constante cinétique
-                       double new_mass = Data::grid_mass_to_burn[i][j]*exp(-k*Data::dt); // calcul de la nouvelle masse et du delta
-                         //   double mass_loss = Data::grid_mass_to_burn[i][j]/tau;
-                       qDebug() << " K : " << k;
-                       qDebug() << "new mass : " << new_mass;
-                            double Qheat = (Data::grid_mass_to_burn[i][j] - new_mass)*Data::combustion_enthalpy;
-                           // double Qheat = mass_loss*Data::combustion_enthalpy;
+                       double new_mass = Data::grid_mass_to_burn[i][j]*exp(-k*Data::dt); // calcul de la nouvelle masse et du delta*/
+                            double mass_loss = Data::grid_mass_to_burn[i][j]/Data::dt;
+                     //  qDebug() << " K : " << k;
+                     //  qDebug() << "new mass : " << new_mass;
+                          //  double Qheat = (Data::grid_mass_to_burn[i][j] - new_mass)*Data::combustion_enthalpy;
+                            double Qheat = mass_loss*Data::combustion_enthalpy;
                             Data::grid_flame_length[i][j] = abs(0.0148*pow(Qheat, 0.4)-1.02*Data::grid_tree_width[i][j]);
                             double flame_power = Data::part_of_lost_heat*Qheat/(3.14159*Data::grid_tree_width[i][j]*Data::grid_flame_length[i][j]);
                             double flame_emissivity = 1-exp(-0.6*Data::grid_flame_length[i][j]);// < 1
                             //qDebug() << "Old parameters, flame length : " << Data::grid_flame_length[i][j];
 
                             Data::grid_flame_temperature[i][j] = std::max(pow(flame_power/(flame_emissivity*Data::CONSTANT_Stephane_Boltzmann),0.25)+273.15, Data::grid_case_temperature[i][j]); // Calcul de la température de la flamme
-                            Data::grid_mass_to_burn[i][j] = new_mass;*/
+                            Data::grid_mass_to_burn[i][j] -= mass_loss;
+                            //   Data::grid_mass_to_burn[i][j] = new_mass;
                     }
                 } else if (Data::grid_state[i][j] == Data::STATE_ON_FIRE) { // calcul des paramètres de flamme et cinétique du carburant
-                   // double tau = 75600/Data::sigma;
-                double k = Data::A*exp(-Data::Ea/(Data::CONSTANT_GAS*Data::grid_case_temperature[i][j])); // constante cinétique
-               double new_mass = Data::grid_mass_to_burn[i][j]*exp(-k*Data::dt); // calcul de la nouvelle masse et du delta
-                 //   double mass_loss = Data::grid_mass_to_burn[i][j]/tau;
-                    double Qheat = (Data::grid_mass_to_burn[i][j] - new_mass)*Data::combustion_enthalpy;
+                    double tau = 75600/Data::sigma;
+             //   double k = Data::A*exp(-Data::Ea/(Data::CONSTANT_GAS*Data::grid_case_temperature[i][j])); // constante cinétique
+             //  double new_mass = Data::grid_mass_to_burn[i][j]*exp(-k*Data::dt); // calcul de la nouvelle masse et du delta
+                    double mass_loss = Data::grid_mass_to_burn[i][j]/tau;
+                  /*  double Qheat = (Data::grid_mass_to_burn[i][j] - new_mass)*Data::combustion_enthalpy;
                     qDebug() << "Mass loose : " << Data::grid_mass_to_burn[i][j] - new_mass;
                     qDebug() << "K value : " << k;
-                    qDebug() << "Mass to burn " << Data::grid_mass_to_burn[i][j];
-                   // double Qheat = mass_loss*Data::combustion_enthalpy;
+                    qDebug() << "Mass to burn " << Data::grid_mass_to_burn[i][j];*/
+                    double Qheat = mass_loss*Data::combustion_enthalpy;
 
                     double flame_power = Data::part_of_lost_heat*Qheat/(3.14159*Data::grid_tree_width[i][j]*Data::grid_flame_length[i][j]);
                     double flame_emissivity = 1-exp(-0.6*Data::grid_flame_length[i][j]);// < 1
@@ -586,17 +585,18 @@ void Simulator::updateMap() {
 
                     Data::grid_flame_temperature[i][j] = pow(flame_power/(flame_emissivity*Data::CONSTANT_Stephane_Boltzmann),0.25)+273.15; // Calcul de la température de la flamme
                     Data::grid_flame_length[i][j] = abs(0.0148*pow(Qheat, 0.4)-1.02*Data::grid_tree_width[i][j]);
-                    Data::grid_mass_to_burn[i][j] = new_mass;
+                    Data::grid_mass_to_burn[i][j] -= mass_loss;
                    // Data::grid_mass_to_burn[i][j] -= mass_loss;
                    /* if (Data::grid_flame_length[i][j] < 1e-2) {
                         Data::grid_state[i][j] = Data::STATE_HOT_BURNT;
                     }*/
                     qDebug() << "Puissance flamme " << flame_power;
-                    qDebug() << "Tree width " << Data::grid_tree_width[i][j];
+                   /* qDebug() << "Tree width " << Data::grid_tree_width[i][j];
                     qDebug() << "Chaleur " << Qheat;
                     qDebug() << "Température flamme " << Data::grid_flame_temperature[i][j];
-                    qDebug() << "Longueur flamme " << Data::grid_flame_length[i][j];
-                    if (Data::grid_mass_to_burn[i][j] < 0) {
+                    qDebug() << "Longueur flamme " << Data::grid_flame_length[i][j];*/
+                    qDebug() << "Masse " << mass_loss;
+                    if (Data::grid_mass_to_burn[i][j] <= 0.05) {
                         Data::grid_state[i][j] = Data::STATE_HOT_BURNT;
                         Data::grid_flame_length[i][j] = 0.0;
                         Data::grid_flame_temperature[i][j] = 0.0;
